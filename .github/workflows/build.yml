@@ -3,8 +3,20 @@ name: Build
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/wiki-sync.yml'
+      - 'mkdocs.yml'
+      - 'README.md'
+      - 'LICENSE'
   pull_request:
     branches: [main]
+    paths-ignore:
+      - 'docs/**'
+      - '.github/workflows/wiki-sync.yml'
+      - 'mkdocs.yml'
+      - 'README.md'
+      - 'LICENSE'
 
 jobs:
   android:

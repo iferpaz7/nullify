@@ -1,36 +1,31 @@
-name: Sync Wiki
+name: Publish Wiki
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
-      - "docs/**"
-      - "mkdocs.yml"
+      - 'docs/wiki/**'
+      - '.github/workflows/wiki-sync.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: publish-wiki
+  cancel-in-progress: true
 
 permissions:
   contents: write
 
 jobs:
-  sync:
+  publish:
+    name: Sync docs/wiki to GitHub Wiki
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Sync docs to GitHub Wiki
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          WIKI_DIR="$(mktemp -d)"
-          git clone "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.wiki.git" "$WIKI_DIR"
-          rm -rf "$WIKI_DIR"/*
-          cp -r docs/* "$WIKI_DIR"
-          cd "$WIKI_DIR"
-          git config user.name "${GITHUB_ACTOR}"
-          git config user.email "${GITHUB_ACTOR_ID}+${GITHUB_ACTOR}@users.noreply.github.com"
-          git add -A
-          if ! git diff --cached --quiet; then
-            git commit -m "Sync wiki from docs/ [skip ci]"
-            git push
-          fi
+      - uses: Andrew-Chen-Wang/github-wiki-action@v5
+        with:
+          path: docs/wiki/
+          commit-message: 'docs: sync wiki from docs/wiki [skip ci]'
+          disable-empty-commits: true

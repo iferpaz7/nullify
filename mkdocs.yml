@@ -1,7 +1,8 @@
 site_name: Nullify
 site_description: Call firewall for Ecuador
 repo_url: https://github.com/acontplus/acontplus-libs
-edit_uri: edit/main/nullify/docs/
+docs_dir: docs/wiki
+edit_uri: edit/main/nullify/docs/wiki/
 
 nav:
   - Home: index.md
