@@ -1,0 +1,2 @@
+-keep class com.nullify.data.** { *; }
+-keep class com.nullify.service.** { *; }

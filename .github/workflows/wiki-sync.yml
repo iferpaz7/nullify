@@ -1,0 +1,23 @@
+name: Sync Wiki
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Sync docs to GitHub Wiki
+        uses: acontplus/actions/wiki-sync@v1
+        with:
+          source: docs
+          wiki_repo: acontplus/acontplus-libs
+          github_token: ${{ secrets.ORG_GITHUB_TOKEN }}

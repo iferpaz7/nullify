@@ -1,0 +1,25 @@
+site_name: Nullify
+site_description: Call firewall for Ecuador
+repo_url: https://github.com/acontplus/acontplus-libs
+edit_uri: edit/main/nullify/docs/
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Setup: setup.md
+  - Usage: usage.md
+  - Building: building.md
+  - Roadmap: roadmap.md
+
+theme:
+  name: material
+  language: en
+  palette:
+    primary: green
+    accent: green
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
