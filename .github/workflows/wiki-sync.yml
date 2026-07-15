@@ -16,8 +16,18 @@ jobs:
           fetch-depth: 0
 
       - name: Sync docs to GitHub Wiki
-        uses: acontplus/actions/wiki-sync@v1
-        with:
-          source: docs
-          wiki_repo: acontplus/acontplus-libs
-          github_token: ${{ secrets.ORG_GITHUB_TOKEN }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          WIKI_DIR="$(mktemp -d)"
+          git clone "https://x-access-token:${GH_TOKEN}@github.com/iferpaz7/nullify.wiki.git" "$WIKI_DIR"
+          rm -rf "$WIKI_DIR"/*
+          cp -r docs/* "$WIKI_DIR"
+          cd "$WIKI_DIR"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Sync wiki from docs/ [skip ci]"
+            git push
+          fi
