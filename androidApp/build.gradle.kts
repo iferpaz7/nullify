@@ -22,10 +22,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = System.getenv("KEYSTORE_PATH")?.let { file(it) }
-            storePassword = System.getenv("KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("KEY_ALIAS")
-            keyPassword = System.getenv("KEY_PASSWORD")
+            storeFile = System.getenv("KEYSTORE_PATH")?.takeIf { it.isNotEmpty() }?.let { file(it) }
+            storePassword = System.getenv("KEYSTORE_PASSWORD")?.takeIf { it.isNotEmpty() }
+            keyAlias = System.getenv("KEY_ALIAS")?.takeIf { it.isNotEmpty() }
+            keyPassword = System.getenv("KEY_PASSWORD")?.takeIf { it.isNotEmpty() }
         }
     }
 
@@ -39,7 +39,7 @@ android {
             )
             signingConfig = if (
                 System.getenv("CI") == "true" &&
-                System.getenv("KEYSTORE_PASSWORD") != null
+                !System.getenv("KEYSTORE_PASSWORD").isNullOrBlank()
             ) {
                 signingConfigs.getByName("release")
             } else {
