@@ -19,6 +19,44 @@ On first launch the app requests:
 
 Once granted, contacts are synced immediately and the service activates.
 
+## Background behavior
+
+The `CallScreeningService` is bound by the Android Telecom framework when a call
+arrives — the app does **not** need to be running or in the foreground. The
+system starts the app's process on demand.
+
+However, some manufacturers aggressively kill background processes, which can
+prevent the service from starting. On these devices the user must manually
+exclude Nullify from battery optimization.
+
+### Samsung (One UI)
+
+1. **Settings > Apps > Nullify > Battery**
+2. Select **Unrestricted**
+3. **Settings > Battery > Background usage limits > Never sleeping apps**
+4. Tap **+** and add Nullify
+
+### Xiaomi (MIUI)
+
+1. Open **Security** app > **Manage apps** > Nullify
+2. Enable **Autostart**
+3. **Settings > Apps > Manage apps > Nullify > Battery saver > No restrictions**
+
+### Huawei (EMUI)
+
+1. **Settings > Apps > Apps > Nullify > Battery > App launch**
+2. Set to **Manage manually** and enable all toggles
+
+### OPPO (ColorOS)
+
+1. **Settings > Apps > App management > Nullify > Power consumption**
+2. Select **Allow background activity**
+
+### Other devices
+
+If calls are not being blocked, check your device's battery optimization settings
+and exclude Nullify from any power-saving or app-sleeping features.
+
 ## Main screen
 
 ### Add manual exception

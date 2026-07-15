@@ -23,6 +23,11 @@
             </intent-filter>
         </activity>
 
+        <activity
+            android:name=".test.SimulateCallActivity"
+            android:exported="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
         <service
             android:name=".service.NullifyScreeningService"
             android:permission="android.permission.BIND_SCREENING_SERVICE"

@@ -11,12 +11,21 @@ android {
         applicationId = "com.nullify"
         minSdk = 29
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
+        versionName = System.getenv("VERSION_NAME") ?: "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
+        }
+    }
+
+    signingConfigs {
+        create("release") {
+            storeFile = System.getenv("KEYSTORE_PATH")?.let { file(it) }
+            storePassword = System.getenv("KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("KEY_ALIAS")
+            keyPassword = System.getenv("KEY_PASSWORD")
         }
     }
 
@@ -28,6 +37,14 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = if (
+                System.getenv("CI") == "true" &&
+                System.getenv("KEYSTORE_PASSWORD") != null
+            ) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
         }
     }
 
