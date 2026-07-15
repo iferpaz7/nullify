@@ -2,7 +2,7 @@
 
 ## Permissions
 
-On first launch, the app requests:
+On first launch the app requests:
 
 1. **Call Screening role** — required to intercept calls
 2. **Contacts permission** — to sync the address book
