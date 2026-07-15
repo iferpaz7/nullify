@@ -41,10 +41,11 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val view = LocalView.current
+            val statusBarColor = androidx.compose.material3.MaterialTheme.colorScheme.primary.toArgb()
             if (!view.isInEditMode) {
                 SideEffect {
                     @Suppress("DEPRECATION")
-                    window.statusBarColor = androidx.compose.material3.MaterialTheme.colorScheme.primary.toArgb()
+                    window.statusBarColor = statusBarColor
                     WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
                 }
             }

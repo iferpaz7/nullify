@@ -64,6 +64,8 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
 
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.sqlite.bundled)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
