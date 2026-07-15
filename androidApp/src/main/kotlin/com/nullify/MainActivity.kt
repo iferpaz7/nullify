@@ -1,17 +1,21 @@
 package com.nullify
 
+import android.Manifest
 import android.app.role.RoleManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
+import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.Constraints
@@ -25,6 +29,17 @@ import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
 
+    private val requiredPermissions = mutableListOf(Manifest.permission.READ_CONTACTS).apply {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private val permissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+            scheduleContactSync()
+        }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -37,7 +52,7 @@ class MainActivity : ComponentActivity() {
         }
 
         requestCallScreeningRole()
-        scheduleContactSync()
+        requestPermissionsIfNeeded()
 
         setContent {
             val view = LocalView.current
@@ -50,6 +65,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
             NullifyApp(viewModel = viewModel)
+        }
+    }
+
+    private fun requestPermissionsIfNeeded() {
+        val missing = requiredPermissions.filter {
+            ContextCompat.checkSelfPermission(this, it) != PackageManager.PERMISSION_GRANTED
+        }
+        if (missing.isNotEmpty()) {
+            permissionLauncher.launch(missing.toTypedArray())
+        } else {
+            scheduleContactSync()
         }
     }
 
@@ -66,6 +92,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun scheduleContactSync() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+            != PackageManager.PERMISSION_GRANTED
+        ) return
+
         val syncRequest = PeriodicWorkRequestBuilder<ContactSyncWorker>(
             6, TimeUnit.HOURS
         ).setConstraints(

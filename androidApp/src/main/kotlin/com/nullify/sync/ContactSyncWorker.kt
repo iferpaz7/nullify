@@ -1,7 +1,10 @@
 package com.nullify.sync
 
+import android.Manifest
 import android.content.Context
+import android.content.pm.PackageManager
 import android.provider.ContactsContract
+import androidx.core.content.ContextCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.nullify.NullifyApp
@@ -16,6 +19,14 @@ class ContactSyncWorker(
 ) : CoroutineWorker(context, params) {
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        if (ContextCompat.checkSelfPermission(
+                applicationContext,
+                Manifest.permission.READ_CONTACTS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return@withContext Result.success()
+        }
+
         val app = applicationContext as NullifyApp
         val db = app.database
         val contactsList = mutableListOf<AllowedContact>()
