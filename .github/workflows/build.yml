@@ -63,15 +63,7 @@ jobs:
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           CI: 'true'
 
-      - name: Upload debug APK
-        if: github.ref_type != 'tag'
-        uses: actions/upload-artifact@v7
-        with:
-          name: nullify-${{ steps.version.outputs.name }}
-          path: androidApp/build/outputs/apk/debug/*.apk
-
-      - name: Upload release APK
-        if: github.ref_type == 'tag'
+      - name: Upload APK
         uses: actions/upload-artifact@v7
         with:
           name: nullify-${{ steps.version.outputs.name }}
