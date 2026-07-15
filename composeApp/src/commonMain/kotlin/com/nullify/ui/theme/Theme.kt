@@ -7,6 +7,8 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
+enum class ThemeMode { System, Light, Dark }
+
 private val LightColorScheme = lightColorScheme(
     primary = NullifyPrimary,
     onPrimary = NullifyOnPrimary,
@@ -56,10 +58,16 @@ expect fun getDynamicColorScheme(darkTheme: Boolean): ColorScheme?
 
 @Composable
 fun NullifyTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.System,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.System -> isSystemInDarkTheme()
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+    }
+
     val colorScheme = if (dynamicColor) {
         getDynamicColorScheme(darkTheme) ?: if (darkTheme) DarkColorScheme else LightColorScheme
     } else {
@@ -71,4 +79,10 @@ fun NullifyTheme(
         typography = NullifyTypography,
         content = content
     )
+}
+
+fun ThemeMode.next(): ThemeMode = when (this) {
+    ThemeMode.System -> ThemeMode.Light
+    ThemeMode.Light -> ThemeMode.Dark
+    ThemeMode.Dark -> ThemeMode.System
 }

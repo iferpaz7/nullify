@@ -24,3 +24,15 @@ val NullifyOnSurface = Color(0xFF1C1B1F)
 val NullifySurfaceVariant = Color(0xFFE8E8E8)
 val NullifyOnSurfaceVariant = Color(0xFF49454F)
 val NullifyOutline = Color(0xFF79747E)
+
+// Glassmorphism — gradient backgrounds
+val GlassGradientStartLight = Color(0xFFE8F5E9)
+val GlassGradientMidLight = Color(0xFFE0F2F1)
+val GlassGradientEndLight = Color(0xFFE3F2FD)
+val GlassGradientStartDark = Color(0xFF1B2E1B)
+val GlassGradientMidDark = Color(0xFF1A2E2D)
+val GlassGradientEndDark = Color(0xFF0D2338)
+
+// Glassmorphism — surface tint (applied via copy(alpha =))
+val GlassBorderLight = Color(0x4DFFFFFF)
+val GlassBorderDark = Color(0x1AFFFFFF)

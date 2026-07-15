@@ -15,6 +15,8 @@
 | **Contact sync** | Device contacts synced automatically to allowlist |
 | **System whitelist** | Ecuadorian bank/utility numbers always allowed |
 | **Manual exceptions** | Add numbers not in your contacts to the allowlist |
+| **Glassmorphism UI** | Frosted-glass surfaces over soft gradient background |
+| **Theme toggle** | Switch between System / Light / Dark from the top bar |
 
 ---
 

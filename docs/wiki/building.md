@@ -53,6 +53,16 @@ and the APK is automatically uploaded as a GitHub Release artifact.
 ## CI pipeline
 
 The GitHub Actions workflow (`.github/workflows/build.yml`) runs on every push
-and pull request to `main`. On version tags (`v*`) it builds a signed release
-APK and creates a GitHub Release. Documentation changes (`docs/**`) are
-excluded from triggering builds.
+and pull request to `main`. On every push to `main`, it builds the APK and
+automatically creates a tag + GitHub Release (debug-signed). On version tags
+(`v*`) it builds a **signed** release APK using the configured keystore.
+Documentation changes (`docs/**`) are excluded from triggering builds.
+
+### Current toolchain
+
+| Tool    | Version |
+|---------|---------|
+| AGP     | 9.1.0   |
+| Kotlin  | 2.4.10  |
+| Gradle  | 9.3.1   |
+| R8      | 9.1.x   |

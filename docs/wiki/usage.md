@@ -57,6 +57,12 @@ exclude Nullify from battery optimization.
 If calls are not being blocked, check your device's battery optimization settings
 and exclude Nullify from any power-saving or app-sleeping features.
 
+## Theme
+
+A theme toggle is available in the top bar (right side icon). Tap to cycle
+between **System** (follows device), **Claro** (light mode) and **Oscuro**
+(dark mode). The choice is kept in memory for the current session.
+
 ## Main screen
 
 ### Add manual exception
