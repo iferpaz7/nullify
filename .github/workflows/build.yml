@@ -36,10 +36,9 @@ jobs:
         id: version
         run: |
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            # Strip 'v' prefix: v1.2.3 -> 1.2.3
             VERSION_NAME="${GITHUB_REF_NAME#v}"
           else
-            VERSION_NAME="1.0.${{ github.run_number }}-${GITHUB_REF_NAME:-main}"
+            VERSION_NAME="1.0.${{ github.run_number }}"
           fi
           VERSION_CODE=${{ github.run_number }}
           echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
@@ -70,21 +69,28 @@ jobs:
           path: androidApp/build/outputs/apk/release/*.apk
 
       - name: Generate release notes
-        if: github.ref_type == 'tag'
         id: release_notes
         run: |
-          git log --oneline "$(git tag --sort=-creatordate | head -2 | tail -1)..HEAD" 2>/dev/null \
-            || git log --oneline HEAD~10..HEAD \
-            > release_notes.md
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            PREV_TAG=$(git tag --sort=-creatordate | head -2 | tail -1)
+            if [[ -n "$PREV_TAG" && "$PREV_TAG" != "$GITHUB_REF_NAME" ]]; then
+              git log --oneline "$PREV_TAG..HEAD" > release_notes.md
+            fi
+          fi
+          if [[ ! -f release_notes.md || ! -s release_notes.md ]]; then
+            git log --oneline HEAD~10..HEAD > release_notes.md
+          fi
 
       - name: Create GitHub Release
-        if: github.ref_type == 'tag'
+        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v3
         with:
+          tag_name: v${{ steps.version.outputs.name }}
           files: androidApp/build/outputs/apk/release/*.apk
           body_path: release_notes.md
           generate_release_notes: true
           fail_on_unmatched_files: false
+          make_latest: true
 
   lint:
     runs-on: ubuntu-latest
