@@ -54,7 +54,6 @@ class ContactSyncWorker(
             }
 
             if (contactsList.isNotEmpty()) {
-                db.contactDao().clearAll()
                 db.contactDao().insertAll(contactsList)
             }
             Result.success()

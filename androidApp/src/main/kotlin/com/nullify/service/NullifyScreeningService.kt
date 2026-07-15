@@ -3,6 +3,7 @@ package com.nullify.service
 import android.net.Uri
 import android.telecom.Call
 import android.telecom.CallScreeningService
+import android.util.Log
 import com.nullify.NullifyApp
 import com.nullify.utils.EcuadorPhoneUtils
 import kotlinx.coroutines.Dispatchers
@@ -16,15 +17,18 @@ class NullifyScreeningService : CallScreeningService() {
             return
         }
 
-        val handle: Uri? = callDetails.handle
+        val handle = callDetails.handle
         val rawNumber = handle?.schemeSpecificPart ?: ""
 
+        Log.i("NullifyScreening", "Incoming call from: $rawNumber")
+
         if (rawNumber.isEmpty()) {
-            blockCall(callDetails)
+            blockCall(callDetails, "private/unknown number")
             return
         }
 
         if (EcuadorPhoneUtils.isEmergencyNumber(rawNumber)) {
+            Log.i("NullifyScreening", "Emergency number — allowing")
             respondToCall(callDetails, CallResponse.Builder().build())
             return
         }
@@ -37,19 +41,20 @@ class NullifyScreeningService : CallScreeningService() {
         }
 
         if (isAllowed) {
+            Log.i("NullifyScreening", "Number found in contacts — allowing")
             respondToCall(callDetails, CallResponse.Builder().build())
         } else {
-            blockCall(callDetails)
+            blockCall(callDetails, "unknown number")
         }
     }
 
-    private fun blockCall(callDetails: Call.Details) {
-        val response = CallResponse.Builder()
+    private fun blockCall(callDetails: Call.Details, reason: String) {
+        Log.i("NullifyScreening", "Blocking $reason")
+        respondToCall(callDetails, CallResponse.Builder()
             .setDisallowCall(true)
             .setRejectCall(true)
             .setSkipCallLog(false)
             .setSkipNotification(false)
-            .build()
-        respondToCall(callDetails, response)
+            .build())
     }
 }

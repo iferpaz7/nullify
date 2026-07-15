@@ -10,12 +10,11 @@
 
 | Feature | Description |
 |---|---|
-| 📋 **Blocklist** | Numbers you want to block — manual or from call log |
-| 📖 **Allowlist** | Numbers that always ring through |
-| 📊 **Call log** | In-app history of all screened calls |
-| 🤖 **Auto-block prefixes** | Block by prefix (e.g. `1800-` telemarketing) |
-| 🔒 **Private numbers** | Block unknown/private/hidden callers |
-| 📱 **Contact sync** | Select contacts to never block |
+| **Allowlist mode** | Only contacts and emergency numbers ring through |
+| **Private number blocking** | Unknown/private/hidden callers are blocked |
+| **Contact sync** | Device contacts synced automatically to allowlist |
+| **System whitelist** | Ecuadorian bank/utility numbers always allowed |
+| **Manual exceptions** | Add numbers not in your contacts to the allowlist |
 
 ---
 
@@ -47,5 +46,5 @@ Requires Android SDK 36+ and JDK 21.
 
 | Platform | Status |
 |---|---|
-| Android 11+ | ✅ Supported (CallScreeningService) |
+| Android 10+ | ✅ Supported (CallScreeningService) |
 | iOS | 🚧 In development (Call Directory extension) |

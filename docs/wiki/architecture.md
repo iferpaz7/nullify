@@ -3,8 +3,8 @@
 ## Overview
 
 Nullify uses Android's `CallScreeningService` to intercept incoming calls. Each
-call is evaluated against a local whitelist stored in Room. If the number is not
-authorized, the call is silently rejected.
+call is evaluated against a local allowlist (device contacts + system whitelist)
+stored in Room. If the number is not authorized, the call is silently rejected.
 
 ```
 Incoming call
@@ -12,10 +12,20 @@ Incoming call
       ▼
 NullifyScreeningService
       │
+      ├── Private/hidden/no number? ──> Block
       ├── Emergency? ──> Allow
-      ├── In whitelist? ──> Allow
-      └── Not authorized ──> Block
+      ├── In allowlist (contacts + system)? ──> Allow
+      └── Unknown number ──> Block
 ```
+
+## Allowlist population
+
+The allowlist has two sources:
+
+- **Device contacts** — synced immediately on permission grant and then
+  periodically every 6 hours via WorkManager (`ContactSyncWorker`)
+- **System whitelist** — prepopulated with Ecuadorian bank/utility numbers
+  (BGR, Banco Pichincha, Produbanco, etc.) on first database creation
 
 ## Modules
 
@@ -24,16 +34,17 @@ NullifyScreeningService
 | Source set    | Contents                                                |
 |---------------|---------------------------------------------------------|
 | `commonMain`  | `EcuadorPhoneUtils`, `AllowedContact`, `ContactDao`,    |
-|               | `NullifyDatabase`, `NullifyViewModel`, `WhitelistScreen`|
-| `androidMain` | `DynamicColorScheme`, `DatabaseFactory`                 |
-| `iosMain`     | `DynamicColorScheme`, `DatabaseFactory`,                |
-|               | `MainViewController`                                    |
+|               | `NullifyDatabase`, `NullifyViewModel`, `WhitelistScreen`,|
+|               | `App`, `Color`, `Theme`, `Type`                        |
+| `androidMain` | `getDynamicColorScheme`, `DatabaseFactory`              |
+| `iosMain`     | `getDynamicColorScheme`, `DatabaseFactory`,             |
+|               | `MainViewController`                                   |
 
 ### androidApp (Android entry)
 
-- `MainActivity` — entry point, requests CallScreening role
-- `NullifyScreeningService` — call screening service
-- `ContactSyncWorker` — periodic contact sync
+- `MainActivity` — entry point, requests CallScreening role + permissions
+- `NullifyScreeningService` — call screening service (allowlist mode)
+- `ContactSyncWorker` — immediate + periodic contact sync
 - `NullifyApp` — Application + WorkManager config
 - `MockConnectionService` — testing utility
 
@@ -44,5 +55,5 @@ NullifyScreeningService
 | Call Screening          | ✅      | ❌ (no API)   |
 | Contact sync            | ✅      | ❌ (no API)   |
 | Compose UI              | ✅      | ✅            |
-| Manual whitelist        | ✅      | ✅            |
+| Manual allowlist        | ✅      | ✅            |
 | Local database          | ✅      | ✅            |

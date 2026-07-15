@@ -20,6 +20,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.nullify.sync.ContactSyncWorker
@@ -96,7 +97,11 @@ class MainActivity : ComponentActivity() {
             != PackageManager.PERMISSION_GRANTED
         ) return
 
-        val syncRequest = PeriodicWorkRequestBuilder<ContactSyncWorker>(
+        val oneTimeSync = OneTimeWorkRequestBuilder<ContactSyncWorker>()
+            .build()
+        WorkManager.getInstance(this).enqueue(oneTimeSync)
+
+        val periodicSync = PeriodicWorkRequestBuilder<ContactSyncWorker>(
             6, TimeUnit.HOURS
         ).setConstraints(
             Constraints.Builder()
@@ -107,7 +112,7 @@ class MainActivity : ComponentActivity() {
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
             "NullifyContactSync",
             ExistingPeriodicWorkPolicy.KEEP,
-            syncRequest
+            periodicSync
         )
     }
 }
