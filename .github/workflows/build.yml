@@ -38,7 +38,10 @@ jobs:
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             VERSION_NAME="${GITHUB_REF_NAME#v}"
           else
-            VERSION_NAME="1.0.${{ github.run_number }}"
+            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+            LATEST_VERSION="${LATEST_TAG#v}"
+            IFS='.' read -r MAJOR MINOR _ <<< "$LATEST_VERSION"
+            VERSION_NAME="${MAJOR}.${MINOR}.${{ github.run_number }}"
           fi
           VERSION_CODE=${{ github.run_number }}
           echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
