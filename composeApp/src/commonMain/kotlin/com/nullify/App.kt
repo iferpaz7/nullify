@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -96,7 +96,7 @@ fun NullifyApp(viewModel: NullifyViewModel) {
                                 selected = currentTab == Tab.Whitelist,
                                 onClick = { currentTab = Tab.Whitelist },
                                 icon = {
-                                    Icon(Icons.Default.List, contentDescription = "Lista blanca")
+                                    Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Lista blanca")
                                 },
                                 label = { Text("Lista Blanca") },
                                 colors = NavigationBarItemDefaults.colors(

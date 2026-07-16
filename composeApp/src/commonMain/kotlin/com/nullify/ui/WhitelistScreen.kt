@@ -58,6 +58,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.nullify.data.AllowedContact
+import com.nullify.ui.state.UiState
 import com.nullify.ui.theme.GlassBorderDark
 import com.nullify.ui.theme.GlassBorderLight
 import com.nullify.ui.theme.ThemeMode
@@ -239,28 +240,56 @@ fun WhitelistScreen(
                 color = MaterialTheme.colorScheme.onBackground,
             )
 
-            if (whitelistState.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = "Ningún número agregado manualmente.\nLos contactos se sincronizan automáticamente.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline,
-                    )
-                }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(whitelistState, key = { it.normalizedNumber }) { contact ->
-                        SwipeableContactCard(
-                            contact = contact,
-                            onDelete = { viewModel.removeContact(contact) },
-                            glassBorder = glassBorder,
+            when (val state = whitelistState) {
+                is UiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = "Cargando...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline,
                         )
+                    }
+                }
+                is UiState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = state.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                is UiState.Success -> {
+                    if (state.data.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(
+                                text = "Ningún número agregado manualmente.\nLos contactos se sincronizan automáticamente.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.outline,
+                            )
+                        }
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(state.data, key = { it.normalizedNumber }) { contact ->
+                                SwipeableContactCard(
+                                    contact = contact,
+                                    onDelete = { viewModel.removeContact(contact) },
+                                    glassBorder = glassBorder,
+                                )
+                            }
+                        }
                     }
                 }
             }

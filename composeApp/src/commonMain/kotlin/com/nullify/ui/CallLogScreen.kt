@@ -38,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.nullify.data.CallLogEntry
+import com.nullify.ui.state.UiState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -67,7 +68,8 @@ fun CallLogScreen(
                         }
                     },
                     actions = {
-                        if (callLogState.isNotEmpty()) {
+                        val hasEntries = (callLogState as? UiState.Success)?.data?.isNotEmpty() ?: false
+                        if (hasEntries) {
                             IconButton(onClick = { viewModel.clearCallLog() }) {
                                 Icon(
                                     imageVector = Icons.Default.DeleteSweep,
@@ -100,33 +102,61 @@ fun CallLogScreen(
         ) {
             Spacer(modifier = Modifier.height(8.dp))
 
-            if (callLogState.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            imageVector = Icons.Default.History,
-                            contentDescription = null,
-                            modifier = Modifier.size(48.dp),
-                            tint = MaterialTheme.colorScheme.outline,
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+            when (val state = callLogState) {
+                is UiState.Loading -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
                         Text(
-                            text = "Sin actividad registrada.\nLas llamadas entrantes aparecerán aquí.",
+                            text = "Cargando...",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.outline,
                         )
                     }
                 }
-            } else {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxSize(),
-                ) {
-                    items(callLogState, key = { it.id }) { entry ->
-                        CallLogCard(entry = entry)
+                is UiState.Error -> {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            text = state.message,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                    }
+                }
+                is UiState.Success -> {
+                    if (state.data.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    imageVector = Icons.Default.History,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(48.dp),
+                                    tint = MaterialTheme.colorScheme.outline,
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    text = "Sin actividad registrada.\nLas llamadas entrantes aparecerán aquí.",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                        }
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        ) {
+                            items(state.data, key = { it.id }) { entry ->
+                                CallLogCard(entry = entry)
+                            }
+                        }
                     }
                 }
             }

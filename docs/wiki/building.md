@@ -34,7 +34,8 @@ Version name and code can be set via environment variables:
 VERSION_CODE=42 VERSION_NAME=2.0.0 ./gradlew :androidApp:assembleRelease
 ```
 
-In CI, these are derived automatically from git tags and run numbers.
+Local debug builds default to version `1.1.0` / code `1`. In CI, these are
+derived automatically from git tags and run numbers.
 
 ## Signing a release
 

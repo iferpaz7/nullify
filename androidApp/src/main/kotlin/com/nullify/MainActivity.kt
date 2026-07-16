@@ -23,6 +23,8 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
+import com.nullify.data.repository.CallLogRepositoryImpl
+import com.nullify.data.repository.ContactRepositoryImpl
 import com.nullify.sync.ContactSyncWorker
 import com.nullify.ui.NullifyViewModel
 import com.nullify.ui.NullifyViewModelFactory
@@ -47,9 +49,8 @@ class MainActivity : ComponentActivity() {
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
 
         val app = application as NullifyApp
-        val db = app.database
         val viewModel: NullifyViewModel by viewModels {
-            NullifyViewModelFactory(db.contactDao(), db.callLogDao())
+            NullifyViewModelFactory(app.contactRepository, app.callLogRepository)
         }
 
         requestCallScreeningRole()

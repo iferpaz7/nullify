@@ -28,7 +28,6 @@ class ContactSyncWorker(
         }
 
         val app = applicationContext as NullifyApp
-        val db = app.database
         val contactsList = mutableListOf<AllowedContact>()
 
         val uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI
@@ -54,7 +53,7 @@ class ContactSyncWorker(
             }
 
             if (contactsList.isNotEmpty()) {
-                db.contactDao().insertAll(contactsList)
+                app.contactRepository.insertAll(contactsList)
             }
             Result.success()
         } catch (e: Exception) {

@@ -27,26 +27,74 @@ The allowlist has two sources:
 - **System whitelist** — prepopulated with Ecuadorian bank/utility numbers
   (BGR, Banco Pichincha, Produbanco, etc.) on first database creation
 
-## Modules
+## Layer architecture
 
-### composeApp (Shared KMP)
+Following [Google's official app architecture recommendations](https://developer.android.com/topic/architecture/recommendations),
+Nullify uses a **3-layer architecture** with unidirectional data flow (UDF):
+
+```
+┌──────────────────────────────────────────────────┐
+│  UI Layer (Compose Multiplatform)                │
+│  WhitelistScreen · CallLogScreen                 │
+│  Collects UiState → renders UI                   │
+│  Events flow up to ViewModel                     │
+├──────────────────────────────────────────────────┤
+│  Presentation Layer (ViewModel)                  │
+│  NullifyViewModel                                │
+│  Exposes StateFlow<UiState<T>>                   │
+│  Injected CoroutineDispatcher                    │
+│  Delegates to Repository interfaces              │
+├──────────────────────────────────────────────────┤
+│  Data Layer (Repository + DAO + Room)            │
+│  ContactRepository · CallLogRepository           │
+│  ContactDao · CallLogDao · NullifyDatabase       │
+│  AllowedContact · CallLogEntry (entities)        │
+├──────────────────────────────────────────────────┤
+│  Platform Layer (Android-specific)               │
+│  NullifyApp · MainActivity · ScreeningService    │
+│  ContactSyncWorker · DatabaseFactory             │
+└──────────────────────────────────────────────────┘
+```
+
+**State flows down; events flow up.** The ViewModel transforms data from
+repositories into a sealed `UiState` (`Loading | Success<T> | Error`) consumed
+by Compose screens via `collectAsState()`. User actions are dispatched as
+method calls back to the ViewModel, never as events to the UI.
+
+### Dependency injection (manual)
+
+All singletons are created at the Application level in `NullifyApp`:
+
+| Singleton                | Created from                  |
+|--------------------------|-------------------------------|
+| `NullifyDatabase`        | `DatabaseFactory`             |
+| `ContactRepository`      | `ContactRepositoryImpl(dao)`  |
+| `CallLogRepository`      | `CallLogRepositoryImpl(dao)`  |
+| `NullifyViewModel`       | `NullifyViewModelFactory` via `by viewModels` |
+
+The `NullifyViewModel` receives `CoroutineDispatcher` (default `Dispatchers.IO`)
+as a constructor parameter, making it testable by substituting test dispatchers
+([per official coroutines best practices](https://developer.android.com/kotlin/coroutines/coroutines-best-practices#inject-dispatchers)).
+
+### Modules
+
+#### composeApp (Shared KMP)
 
 | Source set    | Contents                                                |
 |---------------|---------------------------------------------------------|
-| `commonMain`  | `EcuadorPhoneUtils`, `AllowedContact`, `ContactDao`,    |
-|               | `CallLogEntry`, `CallLogDao`, `NullifyDatabase`,        |
-|               | `NullifyViewModel`, `WhitelistScreen`, `CallLogScreen`, |
-|               | `App`, `Color`, `Theme`, `Type`                        |
+| `commonMain`  | `data/` (entities, DAOs, database, repositories),       |
+|               | `ui/` (ViewModel, screens, theme, UiState),             |
+|               | `utils/`, `App.kt`                                      |
 | `androidMain` | `getDynamicColorScheme`, `DatabaseFactory`              |
 | `iosMain`     | `getDynamicColorScheme`, `DatabaseFactory`,             |
 |               | `MainViewController`                                   |
 
-### androidApp (Android entry)
+#### androidApp (Android entry)
 
 - `MainActivity` — entry point, requests CallScreening role + permissions
 - `NullifyScreeningService` — call screening service (allowlist mode)
 - `ContactSyncWorker` — immediate + periodic contact sync
-- `NullifyApp` — Application + WorkManager config
+- `NullifyApp` — Application + WorkManager config + repository wiring
 - `MockConnectionService` — testing utility
 
 ## UI design
@@ -96,6 +144,25 @@ Every incoming call is logged to the `call_log` table (`CallLogEntry` entity) wi
 Logs are visible in the **Historial** tab (bottom navigation). Maximum 200 entries
 shown, oldest are evicted by Room's `LIMIT 200` query.
 
+## Sealed UI state
+
+All ViewModel states use the `UiState<T>` sealed interface:
+
+```kotlin
+sealed interface UiState<out T> {
+    data object Loading : UiState<Nothing>
+    data class Success<T>(val data: T) : UiState<T>
+    data class Error(val message: String) : UiState<Nothing>
+}
+```
+
+Screens handle all three branches via `when`:
+- **Loading** — shown briefly while Room emits the initial query result
+- **Success** — renders the actual data (or empty-state placeholder)
+- **Error** — displays an error message (catches downstream Flow exceptions)
+
+This follows the [guide to app architecture](https://developer.android.com/topic/architecture/ui-layer/stateholders#ui-state) recommendation of explicit state modeling.
+
 ## Screening performance
 
 On first call arrival the process may cold-start. To avoid the database lazy-init
@@ -106,9 +173,12 @@ screening decision typically completes in **<10ms** after prewarming.
 
 ## Navigation
 
-Two-tab bottom `NavigationBar`:
+Two-tab bottom `NavigationBar` (defined in `App.kt`):
 - **Lista Blanca** — manage manual exceptions, view synced contacts
 - **Historial** — view recent call screening decisions with block/allow status
+
+Tab state is held locally in `NullifyApp` via `remember { mutableStateOf(Tab.Whitelist) }`.
+Each tab receives `viewModel` and the current `themeMode` for glass border colors.
 
 | Feature                 | Android | iOS           |
 |-------------------------|---------|---------------|

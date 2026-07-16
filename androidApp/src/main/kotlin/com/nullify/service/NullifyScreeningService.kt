@@ -47,7 +47,7 @@ class NullifyScreeningService : CallScreeningService() {
         val normalizedIncoming = EcuadorPhoneUtils.normalizeForDatabase(rawNumber)
 
         val app = applicationContext as NullifyApp
-        val isAllowed = app.database.contactDao().isNumberAllowed(normalizedIncoming)
+        val isAllowed = app.contactRepository.isNumberAllowed(normalizedIncoming)
 
         val elapsed = System.currentTimeMillis() - startTime
         if (isAllowed) {
@@ -74,7 +74,7 @@ class NullifyScreeningService : CallScreeningService() {
         logScope.launch {
             try {
                 val app = applicationContext as NullifyApp
-                app.database.callLogDao().insert(
+                app.callLogRepository.insert(
                     CallLogEntry(
                         phoneNumber = phoneNumber,
                         result = result,
