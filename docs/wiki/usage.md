@@ -57,13 +57,22 @@ exclude Nullify from battery optimization.
 If calls are not being blocked, check your device's battery optimization settings
 and exclude Nullify from any power-saving or app-sleeping features.
 
+## Navigation
+
+The app has a bottom navigation bar with two tabs:
+
+| Tab | Icon | Description |
+|-----|------|-------------|
+| **Lista Blanca** | `List` | View/manage whitelist, add manual exceptions |
+| **Historial** | `History` | View recent call screening activity |
+
 ## Theme
 
-A theme toggle is available in the top bar (right side icon). Tap to cycle
-between **System** (follows device), **Claro** (light mode) and **Oscuro**
-(dark mode). The choice is kept in memory for the current session.
+A theme toggle is available in the top bar (right side icon) on the Lista Blanca
+screen. Tap to cycle between **System** (follows device), **Claro** (light mode)
+and **Oscuro** (dark mode). The choice is kept in memory for the current session.
 
-## Main screen
+## Lista Blanca tab
 
 ### Add manual exception
 
@@ -76,7 +85,20 @@ For numbers not in your contacts (e.g. a delivery service, doctor's office):
 ### Whitelist
 
 Displays all authorized numbers — both synced contacts and manual entries.
-Swipe or tap the delete icon to remove an entry.
+Tap the delete icon to remove an entry.
+
+## Historial tab
+
+Shows the last 200 call screening decisions with:
+
+| Column | Description |
+|--------|-------------|
+| Phone number | Caller ID or "Número privado" |
+| Result | `PERMITIDA` (green) or `BLOQUEADA` (red) |
+| Reason | Why the call was allowed/blocked |
+| Time | Relative timestamp ("ahora", "hace 5m", "hace 2h") |
+
+Tap the sweep icon (top right) to clear the log.
 
 ## Automatic sync
 

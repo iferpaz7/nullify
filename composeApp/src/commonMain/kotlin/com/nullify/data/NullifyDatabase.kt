@@ -5,10 +5,15 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.nullify.utils.EcuadorPhoneUtils
 
-@Database(entities = [AllowedContact::class], version = 1, exportSchema = false)
+@Database(
+    entities = [AllowedContact::class, CallLogEntry::class],
+    version = 2,
+    exportSchema = false,
+)
 abstract class NullifyDatabase : RoomDatabase() {
 
     abstract fun contactDao(): ContactDao
+    abstract fun callLogDao(): CallLogDao
 
     class DatabasePrepopulateCallback : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {

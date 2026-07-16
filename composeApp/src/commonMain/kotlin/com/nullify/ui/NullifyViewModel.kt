@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.nullify.data.AllowedContact
+import com.nullify.data.CallLogDao
+import com.nullify.data.CallLogEntry
 import com.nullify.data.ContactDao
 import com.nullify.utils.EcuadorPhoneUtils
 import kotlinx.coroutines.Dispatchers
@@ -12,9 +14,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class NullifyViewModel(private val contactDao: ContactDao) : ViewModel() {
+class NullifyViewModel(
+    private val contactDao: ContactDao,
+    private val callLogDao: CallLogDao,
+) : ViewModel() {
 
     val whitelist: StateFlow<List<AllowedContact>> = contactDao.getAllAllowedContactsFlow()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
+    val callLog: StateFlow<List<CallLogEntry>> = callLogDao.getRecentCalls()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
@@ -39,13 +51,22 @@ class NullifyViewModel(private val contactDao: ContactDao) : ViewModel() {
             contactDao.delete(contact)
         }
     }
+
+    fun clearCallLog() {
+        viewModelScope.launch(Dispatchers.IO) {
+            callLogDao.clearAll()
+        }
+    }
 }
 
-class NullifyViewModelFactory(private val contactDao: ContactDao) : ViewModelProvider.Factory {
+class NullifyViewModelFactory(
+    private val contactDao: ContactDao,
+    private val callLogDao: CallLogDao,
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(NullifyViewModel::class.java)) {
             @Suppress("UNCHECKED_CAST")
-            return NullifyViewModel(contactDao) as T
+            return NullifyViewModel(contactDao, callLogDao) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class")
     }

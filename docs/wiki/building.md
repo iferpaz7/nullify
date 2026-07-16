@@ -58,6 +58,13 @@ automatically creates a tag + GitHub Release (debug-signed). On version tags
 (`v*`) it builds a **signed** release APK using the configured keystore.
 Documentation changes (`docs/**`) are excluded from triggering builds.
 
+### Database schema changes
+
+When schema changes occur (new entities, new columns), Room rebuilds the
+database via `fallbackToDestructiveMigration()`. This means app data **is
+lost** on upgrades during development. For production, write an explicit
+`Migration` object instead.
+
 ### Current toolchain
 
 | Tool    | Version |

@@ -17,6 +17,8 @@
 | **Manual exceptions** | Add numbers not in your contacts to the allowlist |
 | **Glassmorphism UI** | Frosted-glass surfaces over soft gradient background |
 | **Theme toggle** | Switch between System / Light / Dark from the top bar |
+| **Call log** | View recent blocked/allowed calls in the Historial tab |
+| **Bottom navigation** | Switch between Lista Blanca and Historial tabs |
 
 ---
 

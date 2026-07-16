@@ -11,5 +11,6 @@ fun createNullifyDatabase(context: Context): NullifyDatabase {
         "nullify_database"
     )
         .addCallback(NullifyDatabase.DatabasePrepopulateCallback())
+        .fallbackToDestructiveMigration()
         .build()
 }

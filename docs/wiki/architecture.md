@@ -34,7 +34,8 @@ The allowlist has two sources:
 | Source set    | Contents                                                |
 |---------------|---------------------------------------------------------|
 | `commonMain`  | `EcuadorPhoneUtils`, `AllowedContact`, `ContactDao`,    |
-|               | `NullifyDatabase`, `NullifyViewModel`, `WhitelistScreen`,|
+|               | `CallLogEntry`, `CallLogDao`, `NullifyDatabase`,        |
+|               | `NullifyViewModel`, `WhitelistScreen`, `CallLogScreen`, |
 |               | `App`, `Color`, `Theme`, `Type`                        |
 | `androidMain` | `getDynamicColorScheme`, `DatabaseFactory`              |
 | `iosMain`     | `getDynamicColorScheme`, `DatabaseFactory`,             |
@@ -81,6 +82,34 @@ The gradient background and glass-surface alpha adapt per mode.
 
 ## Platform support
 
+## Call log
+
+Every incoming call is logged to the `call_log` table (`CallLogEntry` entity) with:
+
+| Field       | Description                           |
+|-------------|---------------------------------------|
+| `phoneNumber` | Raw caller ID string                 |
+| `result`      | `ALLOWED` or `BLOCKED`              |
+| `reason`      | Why the call was allowed/blocked    |
+| `timestamp`   | Epoch millis                         |
+
+Logs are visible in the **Historial** tab (bottom navigation). Maximum 200 entries
+shown, oldest are evicted by Room's `LIMIT 200` query.
+
+## Screening performance
+
+On first call arrival the process may cold-start. To avoid the database lazy-init
+penalty, `NullifyApp.prewarmDatabase()` opens the SQLite connection eagerly in a
+background thread during `Application.onCreate()`. The `SELECT EXISTS` query in
+`isNumberAllowed()` is synchronous (no `runBlocking` overhead), so each
+screening decision typically completes in **<10ms** after prewarming.
+
+## Navigation
+
+Two-tab bottom `NavigationBar`:
+- **Lista Blanca** — manage manual exceptions, view synced contacts
+- **Historial** — view recent call screening decisions with block/allow status
+
 | Feature                 | Android | iOS           |
 |-------------------------|---------|---------------|
 | Call Screening          | ✅      | ❌ (no API)   |
@@ -88,3 +117,5 @@ The gradient background and glass-surface alpha adapt per mode.
 | Compose UI              | ✅      | ✅            |
 | Manual allowlist        | ✅      | ✅            |
 | Local database          | ✅      | ✅            |
+| Call log                | ✅      | ✅            |
+| Bottom navigation       | ✅      | ✅            |

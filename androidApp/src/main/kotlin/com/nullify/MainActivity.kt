@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
         val app = application as NullifyApp
         val db = app.database
         val viewModel: NullifyViewModel by viewModels {
-            NullifyViewModelFactory(db.contactDao())
+            NullifyViewModelFactory(db.contactDao(), db.callLogDao())
         }
 
         requestCallScreeningRole()

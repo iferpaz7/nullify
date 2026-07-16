@@ -13,6 +13,16 @@ class NullifyApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         database = createNullifyDatabase(this)
+        prewarmDatabase()
+    }
+
+    private fun prewarmDatabase() {
+        Thread {
+            try {
+                database.openHelper.writableDatabase
+            } catch (_: Exception) {
+            }
+        }.start()
     }
 
     override val workManagerConfiguration: Configuration
