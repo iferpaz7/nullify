@@ -80,18 +80,18 @@ as a constructor parameter, making it testable by substituting test dispatchers
 
 #### composeApp (Shared KMP)
 
-| Source set    | Contents                                                |
-|---------------|---------------------------------------------------------|
-| `commonMain`  | `data/` (entities, DAOs, database, repositories),       |
-|               | `ui/` (ViewModel, screens, theme, UiState),             |
-|               | `utils/`, `App.kt`                                      |
-| `androidMain` | `getDynamicColorScheme`, `DatabaseFactory`              |
-| `iosMain`     | `getDynamicColorScheme`, `DatabaseFactory`,             |
-|               | `MainViewController`                                   |
+| Source set    | Contents                                                                  |
+|---------------|---------------------------------------------------------------------------|
+| `commonMain`  | `data/` (entities, DAOs, database, repositories),                         |
+|               | `ui/` (ViewModel, screens, theme, UiState, `components/ContactPlaceholders`), |
+|               | `utils/`, `App.kt`                                                        |
+| `androidMain` | `getDynamicColorScheme`, `PlatformSystemBarsEffect`, `DatabaseFactory`    |
+| `iosMain`     | `getDynamicColorScheme`, `PlatformSystemBarsEffect`, `DatabaseFactory`,   |
+|               | `MainViewController`                                                     |
 
 #### androidApp (Android entry)
 
-- `MainActivity` — entry point, requests CallScreening role + permissions
+- `MainActivity` — entry point with `enableEdgeToEdge()` full-bleed UI, role requests
 - `NullifyScreeningService` — call screening service (allowlist mode)
 - `ContactSyncWorker` — immediate + periodic contact sync
 - `NullifyApp` — Application + WorkManager config + repository wiring
@@ -99,10 +99,7 @@ as a constructor parameter, making it testable by substituting test dispatchers
 
 ## UI design
 
-Nullify uses **Glassmorphism** — a modern design language where surfaces appear
-as frosted glass floating over a soft gradient background. This style was chosen
-because its transparency metaphor communicates the app's core function (call
-screening/firewall) and aligns with security-focused design patterns.
+Nullify uses **Glassmorphism** combined with **Material 3 (Material You)**. For full design system, tokens, and color role specifications, see [Design System & Material 3](design-system).
 
 ### Implementation
 
@@ -115,10 +112,12 @@ screening/firewall) and aligns with security-focused design patterns.
 | TopAppBar        | Transparent background, `HorizontalDivider` border       |
 | Text contrast    | WCAG AA 4.5:1 via ≥82% (light) / 70% (dark) card opacity |
 | Theme toggle     | TopAppBar icon cycles: System → Light → Dark → System    |
+| Edge-to-Edge     | `enableEdgeToEdge()` + dynamic `PlatformSystemBarsEffect` |
+| Placeholders     | `ContactListSkeleton` shimmer & `ContactAvatarPlaceholder`|
 
 The `ThemeMode` enum (`System | Light | Dark`) controls the theme independently
-of the device setting. The `next()` extension function cycles through modes.
-The gradient background and glass-surface alpha adapt per mode.
+of the device setting, with `LocalThemeIsDark` synchronizing all composables
+and system bars contrast.
 
 ### Why Glassmorphism over alternatives
 
@@ -157,11 +156,13 @@ sealed interface UiState<out T> {
 ```
 
 Screens handle all three branches via `when`:
-- **Loading** — shown briefly while Room emits the initial query result
-- **Success** — renders the actual data (or empty-state placeholder)
-- **Error** — displays an error message (catches downstream Flow exceptions)
+- **Loading** — displays animated glassmorphism skeleton loaders (`ContactListSkeleton`) with calibrated linear shimmer (`rememberShimmerBrush`)
+- **Success** — renders contact cards with avatar initials (`ContactAvatarPlaceholder`) or rich contextual empty states (`ContactEmptyStatePlaceholder`) for empty whitelist or search misses
+- **Error** — displays an error message with error container colors (catches downstream Flow exceptions)
 
-This follows the [guide to app architecture](https://developer.android.com/topic/architecture/ui-layer/stateholders#ui-state) recommendation of explicit state modeling.
+This follows the [guide to app architecture](https://developer.android.com/topic/architecture/ui-layer/stateholders#ui-state) and [architecture recommendations](https://developer.android.com/topic/architecture/recommendations):
+- **Lifecycle-safe flow collection**: Screens collect `UiState` via `collectAsStateWithLifecycle()` (from `androidx.lifecycle.compose`), halting collection when the UI is stopped/hidden.
+- **Configuration change survival**: Ephemeral form state (`nameInput`, `numberInput`, `showError`) uses `rememberSaveable` to preserve user input across activity recreation.
 
 ## Screening performance
 
@@ -171,14 +172,16 @@ background thread during `Application.onCreate()`. The `SELECT EXISTS` query in
 `isNumberAllowed()` is synchronous (no `runBlocking` overhead), so each
 screening decision typically completes in **<10ms** after prewarming.
 
-## Navigation
+## Navigation & Inset Handling
 
 Two-tab bottom `NavigationBar` (defined in `App.kt`):
 - **Lista Blanca** — manage manual exceptions, view synced contacts
 - **Historial** — view recent call screening decisions with block/allow status
 
 Tab state is held locally in `NullifyApp` via `remember { mutableStateOf(Tab.Whitelist) }`.
-Each tab receives `viewModel` and the current `themeMode` for glass border colors.
+The root `Scaffold` manages bottom bar insets, while child screens specify
+`contentWindowInsets = WindowInsets(0, 0, 0, 0)` so that `TopAppBar` elements
+consume status bar insets independently without double padding.
 
 | Feature                 | Android | iOS           |
 |-------------------------|---------|---------------|

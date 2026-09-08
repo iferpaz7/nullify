@@ -16,6 +16,8 @@
 | **System whitelist** | Ecuadorian bank/utility numbers always allowed |
 | **Manual exceptions** | Add numbers not in your contacts to the allowlist |
 | **Glassmorphism UI** | Frosted-glass surfaces over soft gradient background |
+| **Material 3 & Edge-to-Edge** | Full-bleed UI with dynamic system bar synchronization (Android 15+) |
+| **Smart Placeholders** | Shimmer skeleton loading, avatar initials, and rich empty states |
 | **Theme toggle** | Switch between System / Light / Dark from the top bar |
 | **Call log** | View recent blocked/allowed calls in the Historial tab |
 | **Bottom navigation** | Switch between Lista Blanca and Historial tabs |
@@ -27,6 +29,7 @@
 | Guide | Description |
 |---|---|
 | [Architecture](architecture) | Project structure, tech stack, module dependency map |
+| [Design System](design-system) | Material 3 alignment, glassmorphism, dark/light strategy, placeholders |
 | [Setup](setup) | Local development environment setup |
 | [Usage](usage) | Daily use, permissions, call screening |
 | [Building](building) | Build & deploy for Android and iOS |

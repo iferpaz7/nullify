@@ -6,6 +6,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 
 enum class ThemeMode { System, Light, Dark }
 
@@ -18,6 +20,10 @@ private val LightColorScheme = lightColorScheme(
     onSecondary = NullifyOnSecondary,
     secondaryContainer = NullifySecondaryContainer,
     onSecondaryContainer = NullifyOnSecondaryContainer,
+    tertiary = NullifyTertiary,
+    onTertiary = NullifyOnTertiary,
+    tertiaryContainer = NullifyTertiaryContainer,
+    onTertiaryContainer = NullifyOnTertiaryContainer,
     error = NullifyError,
     onError = NullifyOnError,
     errorContainer = NullifyErrorContainer,
@@ -28,7 +34,19 @@ private val LightColorScheme = lightColorScheme(
     onSurface = NullifyOnSurface,
     surfaceVariant = NullifySurfaceVariant,
     onSurfaceVariant = NullifyOnSurfaceVariant,
-    outline = NullifyOutline
+    outline = NullifyOutline,
+    outlineVariant = NullifyOutlineVariantLight,
+    scrim = NullifyScrim,
+    inverseSurface = NullifyInverseSurfaceLight,
+    inverseOnSurface = NullifyInverseOnSurfaceLight,
+    inversePrimary = NullifyInversePrimaryLight,
+    surfaceDim = NullifySurfaceDimLight,
+    surfaceBright = NullifySurfaceBrightLight,
+    surfaceContainerLowest = NullifySurfaceContainerLowestLight,
+    surfaceContainerLow = NullifySurfaceContainerLowLight,
+    surfaceContainer = NullifySurfaceContainerLight,
+    surfaceContainerHigh = NullifySurfaceContainerHighLight,
+    surfaceContainerHighest = NullifySurfaceContainerHighestLight,
 )
 
 private val DarkColorScheme = darkColorScheme(
@@ -40,6 +58,10 @@ private val DarkColorScheme = darkColorScheme(
     onSecondary = NullifyOnSecondaryContainer,
     secondaryContainer = NullifySecondary,
     onSecondaryContainer = NullifyOnSecondary,
+    tertiary = NullifyTertiaryContainer,
+    onTertiary = NullifyOnTertiaryContainer,
+    tertiaryContainer = NullifyTertiary,
+    onTertiaryContainer = NullifyOnTertiary,
     error = NullifyErrorContainer,
     onError = NullifyOnErrorContainer,
     errorContainer = NullifyError,
@@ -50,11 +72,28 @@ private val DarkColorScheme = darkColorScheme(
     onSurface = NullifyBackground,
     surfaceVariant = NullifyOnSurfaceVariant,
     onSurfaceVariant = NullifySurfaceVariant,
-    outline = NullifyOutline
+    outline = NullifyOutline,
+    outlineVariant = NullifyOutlineVariantDark,
+    scrim = NullifyScrim,
+    inverseSurface = NullifyInverseSurfaceDark,
+    inverseOnSurface = NullifyInverseOnSurfaceDark,
+    inversePrimary = NullifyInversePrimaryDark,
+    surfaceDim = NullifySurfaceDimDark,
+    surfaceBright = NullifySurfaceBrightDark,
+    surfaceContainerLowest = NullifySurfaceContainerLowestDark,
+    surfaceContainerLow = NullifySurfaceContainerLowDark,
+    surfaceContainer = NullifySurfaceContainerDark,
+    surfaceContainerHigh = NullifySurfaceContainerHighDark,
+    surfaceContainerHighest = NullifySurfaceContainerHighestDark,
 )
 
 @Composable
 expect fun getDynamicColorScheme(darkTheme: Boolean): ColorScheme?
+
+@Composable
+expect fun PlatformSystemBarsEffect(darkTheme: Boolean)
+
+val LocalThemeIsDark = staticCompositionLocalOf { false }
 
 @Composable
 fun NullifyTheme(
@@ -74,11 +113,15 @@ fun NullifyTheme(
         if (darkTheme) DarkColorScheme else LightColorScheme
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = NullifyTypography,
-        content = content
-    )
+    PlatformSystemBarsEffect(darkTheme = darkTheme)
+
+    CompositionLocalProvider(LocalThemeIsDark provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = NullifyTypography,
+            content = content
+        )
+    }
 }
 
 fun ThemeMode.next(): ThemeMode = when (this) {

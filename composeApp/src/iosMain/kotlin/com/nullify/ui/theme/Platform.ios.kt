@@ -5,3 +5,6 @@ import androidx.compose.runtime.Composable
 
 @Composable
 actual fun getDynamicColorScheme(darkTheme: Boolean): ColorScheme? = null
+
+@Composable
+actual fun PlatformSystemBarsEffect(darkTheme: Boolean) {}

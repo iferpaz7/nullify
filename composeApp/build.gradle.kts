@@ -42,12 +42,13 @@ kotlin {
             implementation(compose.foundation)
             implementation(compose.material3)
             implementation(compose.ui)
-            implementation(compose.material)
             implementation(compose.components.resources)
             implementation(compose.materialIconsExtended)
 
             implementation(libs.androidx.room.runtime)
             implementation(libs.androidx.sqlite.bundled)
+
+            implementation(libs.androidx.lifecycle.runtime.compose)
 
             implementation(libs.koin.core)
             implementation(libs.koin.compose)

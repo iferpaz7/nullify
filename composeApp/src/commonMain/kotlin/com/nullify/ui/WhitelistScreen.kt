@@ -49,6 +49,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,10 +59,16 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.nullify.data.AllowedContact
+import com.nullify.ui.components.ContactAvatarPlaceholder
+import com.nullify.ui.components.ContactEmptyStatePlaceholder
+import com.nullify.ui.components.ContactListSkeleton
 import com.nullify.ui.state.UiState
 import com.nullify.ui.theme.GlassBorderDark
 import com.nullify.ui.theme.GlassBorderLight
+import com.nullify.ui.theme.LocalThemeIsDark
 import com.nullify.ui.theme.ThemeMode
+
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,14 +77,15 @@ fun WhitelistScreen(
     themeMode: ThemeMode,
     onCycleTheme: () -> Unit,
 ) {
-    val whitelistState by viewModel.whitelist.collectAsState()
-    val searchQuery by viewModel.searchQuery.collectAsState()
+    val whitelistState by viewModel.whitelist.collectAsStateWithLifecycle()
+    val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
 
-    var nameInput by remember { mutableStateOf("") }
-    var numberInput by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
+    var nameInput by rememberSaveable { mutableStateOf("") }
+    var numberInput by rememberSaveable { mutableStateOf("") }
+    var showError by rememberSaveable { mutableStateOf(false) }
 
-    val glassBorder = if (isSystemInDarkTheme()) GlassBorderDark else GlassBorderLight
+    val isDark = LocalThemeIsDark.current
+    val glassBorder = if (isDark) GlassBorderDark else GlassBorderLight
 
     val themeIcon = when (themeMode) {
         ThemeMode.System -> Icons.Default.BrightnessAuto
@@ -92,6 +100,7 @@ fun WhitelistScreen(
 
     Scaffold(
         containerColor = Color.Transparent,
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
             Column {
                 TopAppBar(
@@ -154,7 +163,12 @@ fun WhitelistScreen(
                         value = nameInput,
                         onValueChange = { nameInput = it },
                         label = { Text("Nombre o Identificador") },
-                        placeholder = { Text("Ej. BGR, Banco Pichincha") },
+                        placeholder = {
+                            Text(
+                                "Ej. BGR, Banco Pichincha",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                            )
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         shape = RoundedCornerShape(12.dp),
@@ -168,7 +182,12 @@ fun WhitelistScreen(
                             showError = false
                         },
                         label = { Text("Número de teléfono local") },
-                        placeholder = { Text("Ej. 0998887777 o 023965006") },
+                        placeholder = {
+                            Text(
+                                "Ej. 0998887777 o 023965006",
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                            )
+                        },
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Phone,
                             imeAction = ImeAction.Done,
@@ -239,7 +258,12 @@ fun WhitelistScreen(
                 value = searchQuery,
                 onValueChange = { viewModel.setSearchQuery(it) },
                 label = { Text("Buscar en Lista Blanca") },
-                placeholder = { Text("Nombre o número...") },
+                placeholder = {
+                    Text(
+                        "Nombre o número...",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f),
+                    )
+                },
                 leadingIcon = {
                     Icon(Icons.Default.Search, contentDescription = "Buscar")
                 },
@@ -266,16 +290,7 @@ fun WhitelistScreen(
 
             when (val state = whitelistState) {
                 is UiState.Loading -> {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = "Cargando...",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.outline,
-                        )
-                    }
+                    ContactListSkeleton(count = 5)
                 }
                 is UiState.Error -> {
                     Box(
@@ -291,20 +306,10 @@ fun WhitelistScreen(
                 }
                 is UiState.Success -> {
                     if (state.data.isEmpty()) {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(
-                                text = if (searchQuery.isNotEmpty()) {
-                                    "No se encontraron números con '$searchQuery'."
-                                } else {
-                                    "Ningún número agregado manualmente.\nLos contactos se sincronizan automáticamente."
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.outline,
-                            )
-                        }
+                        ContactEmptyStatePlaceholder(
+                            searchQuery = searchQuery,
+                            onClearSearch = { viewModel.setSearchQuery("") },
+                        )
                     } else {
                         LazyColumn(
                             verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -334,22 +339,29 @@ private fun SwipeableContactCard(
     GlassCard(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier
-                .padding(start = 16.dp, end = 4.dp, top = 12.dp, bottom = 12.dp)
+                .padding(start = 14.dp, end = 4.dp, top = 10.dp, bottom = 10.dp)
                 .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
-                Text(
-                    text = contact.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = "ID: ${contact.normalizedNumber}",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.outline,
-                )
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                ContactAvatarPlaceholder(displayName = contact.displayName)
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = contact.displayName,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = "ID: ${contact.normalizedNumber}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.outline,
+                    )
+                }
             }
             IconButton(onClick = onDelete) {
                 Icon(
@@ -367,9 +379,10 @@ private fun GlassCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    val isDark = LocalThemeIsDark.current
     val shape = RoundedCornerShape(16.dp)
-    val glassBorder = if (isSystemInDarkTheme()) GlassBorderDark else GlassBorderLight
-    val glassAlpha = if (isSystemInDarkTheme()) 0.70f else 0.82f
+    val glassBorder = if (isDark) GlassBorderDark else GlassBorderLight
+    val glassAlpha = if (isDark) 0.70f else 0.82f
 
     Card(
         modifier = modifier,

@@ -37,6 +37,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.nullify.data.CallLogEntry
 import com.nullify.ui.state.UiState
 
@@ -46,10 +47,11 @@ fun CallLogScreen(
     viewModel: NullifyViewModel,
     glassBorder: Color,
 ) {
-    val callLogState by viewModel.callLog.collectAsState()
+    val callLogState by viewModel.callLog.collectAsStateWithLifecycle()
 
     Scaffold(
         containerColor = Color.Transparent,
+        contentWindowInsets = androidx.compose.foundation.layout.WindowInsets(0, 0, 0, 0),
         topBar = {
             Column {
                 TopAppBar(

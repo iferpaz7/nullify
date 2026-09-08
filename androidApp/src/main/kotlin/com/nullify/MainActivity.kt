@@ -6,16 +6,11 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
-import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.SideEffect
-import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
@@ -42,23 +37,13 @@ class MainActivity : ComponentActivity() {
     private val viewModel: NullifyViewModel by viewModel()
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
 
         requestCallScreeningRole()
         requestPermissionsIfNeeded()
 
         setContent {
-            val view = LocalView.current
-            val statusBarColor = MaterialTheme.colorScheme.primary.toArgb()
-            if (!view.isInEditMode) {
-                SideEffect {
-                    @Suppress("DEPRECATION")
-                    window.statusBarColor = statusBarColor
-                    WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
-                }
-            }
             NullifyApp(viewModel = viewModel)
         }
     }
