@@ -3,7 +3,6 @@ package com.nullify
 import android.Manifest
 import android.app.role.RoleManager
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -11,23 +10,20 @@ import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
-import androidx.lifecycle.ViewModelProvider
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
-import com.nullify.data.repository.CallLogRepositoryImpl
-import com.nullify.data.repository.ContactRepositoryImpl
 import com.nullify.sync.ContactSyncWorker
 import com.nullify.ui.NullifyViewModel
-import com.nullify.ui.NullifyViewModelFactory
+import org.koin.androidx.viewmodel.ext.android.viewModel
 import java.util.concurrent.TimeUnit
 
 class MainActivity : ComponentActivity() {
@@ -43,22 +39,19 @@ class MainActivity : ComponentActivity() {
             scheduleContactSync()
         }
 
+    private val viewModel: NullifyViewModel by viewModel()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-
-        val app = application as NullifyApp
-        val viewModel: NullifyViewModel by viewModels {
-            NullifyViewModelFactory(app.contactRepository, app.callLogRepository)
-        }
 
         requestCallScreeningRole()
         requestPermissionsIfNeeded()
 
         setContent {
             val view = LocalView.current
-            val statusBarColor = androidx.compose.material3.MaterialTheme.colorScheme.primary.toArgb()
+            val statusBarColor = MaterialTheme.colorScheme.primary.toArgb()
             if (!view.isInEditMode) {
                 SideEffect {
                     @Suppress("DEPRECATION")
@@ -83,7 +76,7 @@ class MainActivity : ComponentActivity() {
 
     private fun requestCallScreeningRole() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(Context.ROLE_SERVICE) as RoleManager
+            val roleManager = getSystemService(ROLE_SERVICE) as RoleManager
             if (roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
                 if (!roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
                     val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)

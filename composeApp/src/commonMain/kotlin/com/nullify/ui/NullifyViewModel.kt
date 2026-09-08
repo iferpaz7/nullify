@@ -1,7 +1,6 @@
 package com.nullify.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.nullify.data.AllowedContact
 import com.nullify.data.CallLogEntry
@@ -11,8 +10,12 @@ import com.nullify.ui.state.UiState
 import com.nullify.utils.EcuadorPhoneUtils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -23,8 +26,23 @@ class NullifyViewModel(
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
-    val whitelist = contactRepository
-        .getAllAllowedContactsFlow()
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    val whitelist: StateFlow<UiState<List<AllowedContact>>> = combine(
+        contactRepository.getAllAllowedContactsFlow(),
+        _searchQuery
+    ) { contacts, query ->
+        if (query.isBlank()) {
+            contacts
+        } else {
+            val q = query.trim().lowercase()
+            contacts.filter {
+                it.displayName.lowercase().contains(q) ||
+                        it.normalizedNumber.contains(q)
+            }
+        }
+    }
         .map<List<AllowedContact>, UiState<List<AllowedContact>>> { UiState.Success(it) }
         .catch { emit(UiState.Error("Error al cargar la lista blanca")) }
         .stateIn(
@@ -33,7 +51,7 @@ class NullifyViewModel(
             initialValue = UiState.Loading
         )
 
-    val callLog = callLogRepository
+    val callLog: StateFlow<UiState<List<CallLogEntry>>> = callLogRepository
         .getRecentCalls()
         .map<List<CallLogEntry>, UiState<List<CallLogEntry>>> { UiState.Success(it) }
         .catch { emit(UiState.Error("Error al cargar el historial")) }
@@ -42,6 +60,10 @@ class NullifyViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = UiState.Loading
         )
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
 
     fun addManualContact(name: String, number: String) {
         viewModelScope.launch(ioDispatcher) {
@@ -66,18 +88,5 @@ class NullifyViewModel(
         viewModelScope.launch(ioDispatcher) {
             callLogRepository.clearAll()
         }
-    }
-}
-
-class NullifyViewModelFactory(
-    private val contactRepository: ContactRepository,
-    private val callLogRepository: CallLogRepository,
-) : ViewModelProvider.Factory {
-    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        if (modelClass.isAssignableFrom(NullifyViewModel::class.java)) {
-            @Suppress("UNCHECKED_CAST")
-            return NullifyViewModel(contactRepository, callLogRepository) as T
-        }
-        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

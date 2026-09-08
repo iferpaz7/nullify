@@ -3,7 +3,6 @@ package com.nullify.ui
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -25,9 +24,11 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BrightnessAuto
-import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,7 +40,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -71,6 +71,7 @@ fun WhitelistScreen(
     onCycleTheme: () -> Unit,
 ) {
     val whitelistState by viewModel.whitelist.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
     var nameInput by remember { mutableStateOf("") }
     var numberInput by remember { mutableStateOf("") }
@@ -231,7 +232,30 @@ fun WhitelistScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Search Bar
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { viewModel.setSearchQuery(it) },
+                label = { Text("Buscar en Lista Blanca") },
+                placeholder = { Text("Nombre o número...") },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = "Buscar")
+                },
+                trailingIcon = {
+                    if (searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.setSearchQuery("") }) {
+                            Icon(Icons.Default.Clear, contentDescription = "Limpiar búsqueda")
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                shape = RoundedCornerShape(12.dp),
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             Text(
                 text = "Lista de Exclusión Autorizada",
@@ -272,7 +296,11 @@ fun WhitelistScreen(
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                text = "Ningún número agregado manualmente.\nLos contactos se sincronizan automáticamente.",
+                                text = if (searchQuery.isNotEmpty()) {
+                                    "No se encontraron números con '$searchQuery'."
+                                } else {
+                                    "Ningún número agregado manualmente.\nLos contactos se sincronizan automáticamente."
+                                },
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.outline,
                             )

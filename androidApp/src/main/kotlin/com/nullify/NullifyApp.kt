@@ -1,29 +1,46 @@
 package com.nullify
 
 import android.app.Application
+import android.util.Log
 import androidx.work.Configuration
 import com.nullify.data.NullifyDatabase
 import com.nullify.data.repository.CallLogRepository
-import com.nullify.data.repository.CallLogRepositoryImpl
 import com.nullify.data.repository.ContactRepository
-import com.nullify.data.repository.ContactRepositoryImpl
+import com.nullify.di.appModule
+import org.koin.android.ext.android.get
+import org.koin.android.ext.koin.androidContext
+import org.koin.android.ext.koin.androidLogger
+import org.koin.core.context.startKoin
+import org.koin.dsl.module
 
 class NullifyApp : Application(), Configuration.Provider {
 
     lateinit var database: NullifyDatabase
         private set
 
-    lateinit var contactRepository: ContactRepository
-        private set
+    val contactRepository: ContactRepository
+        get() = get()
 
-    lateinit var callLogRepository: CallLogRepository
-        private set
+    val callLogRepository: CallLogRepository
+        get() = get()
 
     override fun onCreate() {
         super.onCreate()
         database = createNullifyDatabase(this)
-        contactRepository = ContactRepositoryImpl(database.contactDao())
-        callLogRepository = CallLogRepositoryImpl(database.callLogDao())
+
+        startKoin {
+            androidLogger()
+            androidContext(this@NullifyApp)
+            modules(
+                module {
+                    single { database }
+                    single { database.contactDao() }
+                    single { database.callLogDao() }
+                },
+                appModule
+            )
+        }
+
         prewarmDatabase()
     }
 
@@ -38,6 +55,6 @@ class NullifyApp : Application(), Configuration.Provider {
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setMinimumLoggingLevel(android.util.Log.INFO)
+            .setMinimumLoggingLevel(Log.INFO)
             .build()
 }
