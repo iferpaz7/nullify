@@ -17,12 +17,12 @@ class ContactRepositoryImpl(
     override suspend fun insert(contact: AllowedContact) =
         contactDao.insert(contact)
 
-    override fun insertAll(contacts: List<AllowedContact>) =
+    override suspend fun insertAll(contacts: List<AllowedContact>) =
         contactDao.insertAll(contacts)
 
     override suspend fun delete(contact: AllowedContact) =
         contactDao.delete(contact)
 
-    override fun clearAll() =
+    override suspend fun clearAll() =
         contactDao.clearAll()
 }

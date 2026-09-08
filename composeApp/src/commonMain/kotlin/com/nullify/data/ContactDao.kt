@@ -20,11 +20,11 @@ interface ContactDao {
     suspend fun insert(contact: AllowedContact)
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertAll(contacts: List<AllowedContact>)
+    suspend fun insertAll(contacts: List<AllowedContact>)
 
     @Delete
     suspend fun delete(contact: AllowedContact)
 
     @Query("DELETE FROM allowed_contacts")
-    fun clearAll()
+    suspend fun clearAll()
 }

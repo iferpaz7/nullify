@@ -7,16 +7,19 @@ object EcuadorPhoneUtils {
     )
 
     fun isEmergencyNumber(rawNumber: String): Boolean {
+        val normalized = normalizeForDatabase(rawNumber)
         val clean = rawNumber.replace(Regex("[^0-9]"), "")
-        return EMERGENCY_SHORT_CODES.contains(clean)
+        return EMERGENCY_SHORT_CODES.contains(normalized) || EMERGENCY_SHORT_CODES.contains(clean)
     }
 
     fun normalizeForDatabase(rawNumber: String): String {
-        val clean = rawNumber.replace(Regex("[^0-9]"), "")
-        return when {
-            clean.startsWith("593") -> clean.substring(3)
-            clean.startsWith("0") -> clean.substring(1)
-            else -> clean
+        var clean = rawNumber.replace(Regex("[^0-9]"), "")
+        if (clean.startsWith("593")) {
+            clean = clean.substring(3)
         }
+        if (clean.startsWith("0")) {
+            clean = clean.substring(1)
+        }
+        return clean
     }
 }
