@@ -33,4 +33,11 @@ object CallScreeningEvaluator {
 
         return ScreeningResult.CHECK_DATABASE
     }
+
+    /**
+     * Maps the whitelist lookup result to a final verdict.
+     * Unknown numbers (not allowed) are blocked — fail-closed firewall.
+     */
+    fun resolveDatabaseResult(isAllowed: Boolean): ScreeningResult =
+        if (isAllowed) ScreeningResult.ALLOW else ScreeningResult.BLOCK
 }

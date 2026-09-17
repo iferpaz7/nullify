@@ -7,6 +7,8 @@ import com.nullify.data.CallLogEntry
 import com.nullify.data.repository.CallLogRepository
 import com.nullify.data.repository.ContactRepository
 import com.nullify.ui.state.UiState
+import com.nullify.utils.AllowedNumberCache
+import com.nullify.utils.ContactSource
 import com.nullify.utils.EcuadorPhoneUtils
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -23,6 +25,7 @@ import kotlinx.coroutines.launch
 class NullifyViewModel(
     private val contactRepository: ContactRepository,
     private val callLogRepository: CallLogRepository,
+    private val allowedNumberCache: AllowedNumberCache,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
@@ -71,9 +74,11 @@ class NullifyViewModel(
             if (normalized.isNotEmpty()) {
                 val newContact = AllowedContact(
                     normalizedNumber = normalized,
-                    displayName = name.trim().ifEmpty { "Entidad Manual" }
+                    displayName = name.trim().ifEmpty { "Entidad Manual" },
+                    source = ContactSource.MANUAL,
                 )
                 contactRepository.insert(newContact)
+                refreshCache()
             }
         }
     }
@@ -81,12 +86,23 @@ class NullifyViewModel(
     fun removeContact(contact: AllowedContact) {
         viewModelScope.launch(ioDispatcher) {
             contactRepository.delete(contact)
+            refreshCache()
         }
     }
 
     fun clearCallLog() {
         viewModelScope.launch(ioDispatcher) {
             callLogRepository.clearAll()
+        }
+    }
+
+    private suspend fun refreshCache() {
+        try {
+            allowedNumberCache.replaceAll(
+                contactRepository.getAllOnce().map { it.normalizedNumber }
+            )
+        } catch (_: Exception) {
+            // Cache refresh is best-effort; the service falls back to DB.
         }
     }
 }

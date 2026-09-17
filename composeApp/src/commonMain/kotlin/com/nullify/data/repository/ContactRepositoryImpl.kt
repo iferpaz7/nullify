@@ -14,6 +14,9 @@ class ContactRepositoryImpl(
     override fun getAllAllowedContactsFlow(): Flow<List<AllowedContact>> =
         contactDao.getAllAllowedContactsFlow()
 
+    override suspend fun getAllOnce(): List<AllowedContact> =
+        contactDao.getAllOnce()
+
     override suspend fun insert(contact: AllowedContact) =
         contactDao.insert(contact)
 
@@ -22,6 +25,10 @@ class ContactRepositoryImpl(
 
     override suspend fun delete(contact: AllowedContact) =
         contactDao.delete(contact)
+
+    override suspend fun deleteByNumbers(numbers: List<String>) {
+        if (numbers.isNotEmpty()) contactDao.deleteByNumbers(numbers)
+    }
 
     override suspend fun clearAll() =
         contactDao.clearAll()

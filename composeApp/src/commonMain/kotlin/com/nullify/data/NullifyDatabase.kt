@@ -3,11 +3,12 @@ package com.nullify.data
 import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.nullify.utils.ContactSource
 import com.nullify.utils.EcuadorPhoneUtils
 
 @Database(
     entities = [AllowedContact::class, CallLogEntry::class],
-    version = 2,
+    version = 3,
     exportSchema = false,
 )
 abstract class NullifyDatabase : RoomDatabase() {
@@ -20,8 +21,8 @@ abstract class NullifyDatabase : RoomDatabase() {
             super.onCreate(db)
             for ((number, label) in getEcuadorSystemWhitelist()) {
                 db.execSQL(
-                    "INSERT OR REPLACE INTO allowed_contacts (normalizedNumber, displayName) VALUES (?, ?)",
-                    arrayOf(number, label)
+                    "INSERT OR REPLACE INTO allowed_contacts (normalizedNumber, displayName, source) VALUES (?, ?, ?)",
+                    arrayOf(number, label, ContactSource.SEED)
                 )
             }
         }

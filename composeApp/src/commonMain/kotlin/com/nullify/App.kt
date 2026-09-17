@@ -43,7 +43,11 @@ import com.nullify.ui.theme.next
 private enum class Tab { Whitelist, CallLog }
 
 @Composable
-fun NullifyApp(viewModel: NullifyViewModel) {
+fun NullifyApp(
+    viewModel: NullifyViewModel,
+    isProtectionActive: Boolean? = null,
+    onRequestProtection: () -> Unit = {},
+) {
     var themeMode by remember { mutableStateOf(ThemeMode.System) }
     var currentTab by remember { mutableStateOf(Tab.Whitelist) }
 
@@ -84,6 +88,7 @@ fun NullifyApp(viewModel: NullifyViewModel) {
             Surface(
                 modifier = Modifier.fillMaxSize(),
                 color = Color.Transparent,
+                contentColor = MaterialTheme.colorScheme.onBackground,
             ) {
                 Scaffold(
                     containerColor = Color.Transparent,
@@ -127,6 +132,8 @@ fun NullifyApp(viewModel: NullifyViewModel) {
                                 viewModel = viewModel,
                                 themeMode = themeMode,
                                 onCycleTheme = { themeMode = themeMode.next() },
+                                isProtectionActive = isProtectionActive,
+                                onRequestProtection = onRequestProtection,
                             )
                             Tab.CallLog -> CallLogScreen(
                                 viewModel = viewModel,

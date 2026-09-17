@@ -5,10 +5,12 @@ import com.nullify.data.repository.CallLogRepositoryImpl
 import com.nullify.data.repository.ContactRepository
 import com.nullify.data.repository.ContactRepositoryImpl
 import com.nullify.ui.NullifyViewModel
+import com.nullify.utils.AllowedNumberCache
 import org.koin.dsl.module
 
 val appModule = module {
+    single { AllowedNumberCache() }
     single<ContactRepository> { ContactRepositoryImpl(get()) }
     single<CallLogRepository> { CallLogRepositoryImpl(get()) }
-    factory { NullifyViewModel(get(), get()) }
+    factory { NullifyViewModel(get(), get(), get()) }
 }

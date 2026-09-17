@@ -7,7 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,12 +26,9 @@ import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonSearch
 import androidx.compose.material.icons.filled.Shield
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -41,37 +37,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.nullify.ui.theme.GlassBorderDark
-import com.nullify.ui.theme.GlassBorderLight
-import com.nullify.ui.theme.LocalThemeIsDark
 
 /**
- * Shimmer gradient brush calibrated for Dark and Light theme strategies.
- * In Dark mode: soft white highlights with low alpha to prevent high-luminance glare.
- * In Light mode: crisp on-surface tones that blend gently with glassmorphism backgrounds.
+ * Shimmer sweep built ONLY from color-scheme tonal tokens.
+ * No hardcoded whites, no per-theme alpha tuning: the sweep is visible yet
+ * glare-free in both light and dark schemes, including dynamic color.
  */
 @Composable
-fun rememberShimmerBrush(
-    isDark: Boolean = LocalThemeIsDark.current,
-): Brush {
-    val shimmerColors = if (isDark) {
-        listOf(
-            Color(0xFFFFFFFF).copy(alpha = 0.04f),
-            Color(0xFFFFFFFF).copy(alpha = 0.15f),
-            Color(0xFFFFFFFF).copy(alpha = 0.04f),
-        )
-    } else {
-        listOf(
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
-            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.04f),
-        )
-    }
+fun rememberShimmerBrush(): Brush {
+    val base = MaterialTheme.colorScheme.surfaceContainerHighest
+    val highlight = MaterialTheme.colorScheme.surfaceContainerLowest
 
     val transition = rememberInfiniteTransition(label = "ShimmerTransition")
     val translateAnim by transition.animateFloat(
@@ -88,7 +66,7 @@ fun rememberShimmerBrush(
     )
 
     return Brush.linearGradient(
-        colors = shimmerColors,
+        colors = listOf(base, highlight, base),
         start = Offset(x = translateAnim - 350f, y = translateAnim - 350f),
         end = Offset(x = translateAnim, y = translateAnim),
     )
@@ -96,80 +74,59 @@ fun rememberShimmerBrush(
 
 /**
  * Skeleton card representing a contact item while the list is loading.
+ * Tonal M3: skeleton shapes over a surfaceContainerLow card.
  */
 @Composable
 fun ContactSkeletonCard(
     modifier: Modifier = Modifier,
     shimmerBrush: Brush = rememberShimmerBrush(),
 ) {
-    val isDark = LocalThemeIsDark.current
-    val shape = RoundedCornerShape(16.dp)
-    val glassBorder = if (isDark) GlassBorderDark else GlassBorderLight
-    val glassAlpha = if (isDark) 0.55f else 0.70f
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = shape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = glassAlpha),
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            Row(
-                modifier = Modifier
-                    .padding(horizontal = 16.dp, vertical = 14.dp)
-                    .fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Avatar skeleton
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(CircleShape)
-                        .background(shimmerBrush)
-                )
+        // Avatar skeleton
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(shimmerBrush)
+        )
 
-                Spacer(modifier = Modifier.width(14.dp))
+        Spacer(modifier = Modifier.width(14.dp))
 
-                // Name and number placeholders
-                Column(modifier = Modifier.weight(1f)) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.55f)
-                            .height(16.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(shimmerBrush)
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(0.38f)
-                            .height(12.dp)
-                            .clip(RoundedCornerShape(4.dp))
-                            .background(shimmerBrush)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Action icon placeholder
-                Box(
-                    modifier = Modifier
-                        .size(24.dp)
-                        .clip(CircleShape)
-                        .background(shimmerBrush)
-                )
-            }
-
-            // Glass border
+        // Name and number placeholders
+        Column(modifier = Modifier.weight(1f)) {
             Box(
                 modifier = Modifier
-                    .matchParentSize()
-                    .clip(shape)
-                    .border(0.5.dp, glassBorder, shape)
+                    .fillMaxWidth(0.55f)
+                    .height(16.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerBrush)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.38f)
+                    .height(12.dp)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(shimmerBrush)
             )
         }
+
+        Spacer(modifier = Modifier.width(12.dp))
+
+        // Action icon placeholder
+        Box(
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape)
+                .background(shimmerBrush)
+        )
     }
 }
 
@@ -193,58 +150,37 @@ fun ContactListSkeleton(
 }
 
 /**
- * Contact avatar placeholder for each contact card in the list.
- * Displays initials if the contact name has letters, or an icon fallback.
- * Uses adaptive tonal styling for Light and Dark modes.
+ * Contact avatar following the M3 list pattern: primaryContainer circle
+ * with onPrimaryContainer initials (or a Person icon fallback).
+ * Works in light, dark and dynamic-color schemes with no manual branches.
  */
 @Composable
 fun ContactAvatarPlaceholder(
     displayName: String,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = LocalThemeIsDark.current
     val initials = extractInitials(displayName)
-
-    val containerColor = if (isDark) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-    } else {
-        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.85f)
-    }
-
-    val contentColor = if (isDark) {
-        MaterialTheme.colorScheme.primary
-    } else {
-        MaterialTheme.colorScheme.onPrimaryContainer
-    }
-
-    val borderColor = if (isDark) {
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-    } else {
-        GlassBorderLight
-    }
 
     Box(
         modifier = modifier
-            .size(42.dp)
+            .size(40.dp)
             .clip(CircleShape)
-            .background(containerColor)
-            .border(0.8.dp, borderColor, CircleShape),
+            .background(MaterialTheme.colorScheme.primaryContainer),
         contentAlignment = Alignment.Center,
     ) {
         if (initials.isNotEmpty()) {
             Text(
                 text = initials,
-                color = contentColor,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 style = MaterialTheme.typography.titleSmall.copy(
                     fontWeight = FontWeight.Bold,
-                    fontSize = 14.sp,
                 ),
             )
         } else {
             Icon(
                 imageVector = Icons.Default.Person,
                 contentDescription = null,
-                tint = contentColor,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(22.dp),
             )
         }
@@ -252,8 +188,8 @@ fun ContactAvatarPlaceholder(
 }
 
 /**
- * Rich empty-state placeholder tailored for WhitelistScreen in both Light and Dark modes.
- * Dynamically switches between 'empty whitelist' and 'no search results' modes.
+ * M3 empty state: centered icon badge on secondaryContainer, headline,
+ * supporting text and a tonal action button when searching.
  */
 @Composable
 fun ContactEmptyStatePlaceholder(
@@ -261,11 +197,7 @@ fun ContactEmptyStatePlaceholder(
     onClearSearch: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val isDark = LocalThemeIsDark.current
     val isSearching = searchQuery.isNotBlank()
-    val shape = RoundedCornerShape(20.dp)
-    val glassBorder = if (isDark) GlassBorderDark else GlassBorderLight
-    val cardAlpha = if (isDark) 0.50f else 0.75f
 
     Box(
         modifier = modifier
@@ -273,107 +205,67 @@ fun ContactEmptyStatePlaceholder(
             .padding(vertical = 24.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(0.92f),
-            shape = shape,
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surface.copy(alpha = cardAlpha),
-            ),
-            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        Column(
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Box(modifier = Modifier.fillMaxWidth()) {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp, vertical = 28.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    // Badge container for icon
-                    val iconBg = if (isDark) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                    } else {
-                        MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.70f)
-                    }
-                    val iconTint = if (isDark) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    }
-
-                    Box(
-                        modifier = Modifier
-                            .size(64.dp)
-                            .clip(CircleShape)
-                            .background(iconBg)
-                            .border(
-                                1.dp,
-                                if (isDark) MaterialTheme.colorScheme.primary.copy(alpha = 0.30f) else GlassBorderLight,
-                                CircleShape,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = if (isSearching) Icons.Default.PersonSearch else Icons.Default.Shield,
-                            contentDescription = null,
-                            tint = iconTint,
-                            modifier = Modifier.size(32.dp),
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Text(
-                        text = if (isSearching) {
-                            "Sin resultados de búsqueda"
-                        } else {
-                            "Lista de exclusión vacía"
-                        },
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        textAlign = TextAlign.Center,
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = if (isSearching) {
-                            "No se encontraron contactos ni números que coincidan con \"$searchQuery\"."
-                        } else {
-                            "Ningún número agregado manualmente aún.\nLos contactos de tu libreta se sincronizan automáticamente."
-                        },
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        lineHeight = 20.sp,
-                    )
-
-                    if (isSearching) {
-                        Spacer(modifier = Modifier.height(20.dp))
-                        OutlinedButton(
-                            onClick = onClearSearch,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = MaterialTheme.colorScheme.primary,
-                            ),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Clear,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("Limpiar búsqueda")
-                        }
-                    }
-                }
-
-                // Glass border
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clip(shape)
-                        .border(0.5.dp, glassBorder, shape)
+            Box(
+                modifier = Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = if (isSearching) Icons.Default.PersonSearch else Icons.Default.Shield,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(32.dp),
                 )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = if (isSearching) {
+                    "Sin resultados de búsqueda"
+                } else {
+                    "Lista de exclusión vacía"
+                },
+                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                color = MaterialTheme.colorScheme.onSurface,
+                textAlign = TextAlign.Center,
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Text(
+                text = if (isSearching) {
+                    "No se encontraron contactos ni números que coincidan con \"$searchQuery\"."
+                } else {
+                    "Ningún número agregado manualmente aún.\nLos contactos de tu libreta se sincronizan automáticamente."
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+
+            if (isSearching) {
+                Spacer(modifier = Modifier.height(20.dp))
+                FilledTonalButton(
+                    onClick = onClearSearch,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Clear,
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text("Limpiar búsqueda")
+                }
             }
         }
     }

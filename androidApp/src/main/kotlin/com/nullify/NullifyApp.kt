@@ -7,6 +7,12 @@ import com.nullify.data.NullifyDatabase
 import com.nullify.data.repository.CallLogRepository
 import com.nullify.data.repository.ContactRepository
 import com.nullify.di.appModule
+import com.nullify.utils.AllowedNumberCache
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.launch
 import org.koin.android.ext.android.get
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
@@ -15,6 +21,8 @@ import org.koin.dsl.module
 
 class NullifyApp : Application(), Configuration.Provider {
 
+    private val appScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+
     lateinit var database: NullifyDatabase
         private set
 
@@ -22,6 +30,9 @@ class NullifyApp : Application(), Configuration.Provider {
         get() = get()
 
     val callLogRepository: CallLogRepository
+        get() = get()
+
+    val allowedNumberCache: AllowedNumberCache
         get() = get()
 
     override fun onCreate() {
@@ -42,6 +53,26 @@ class NullifyApp : Application(), Configuration.Provider {
         }
 
         prewarmDatabase()
+        mirrorWhitelistToCache()
+    }
+
+    /**
+     * Keeps the in-memory screening cache fed from Room so
+     * CallScreeningService never pays DB latency on the hot path.
+     */
+    private fun mirrorWhitelistToCache() {
+        appScope.launch {
+            try {
+                val cache: AllowedNumberCache = get()
+                contactRepository.getAllAllowedContactsFlow()
+                    .catch { Log.e("NullifyApp", "Whitelist flow failed", it) }
+                    .collect { contacts ->
+                        cache.replaceAll(contacts.map { it.normalizedNumber })
+                    }
+            } catch (e: Exception) {
+                Log.e("NullifyApp", "Failed to mirror whitelist to cache", e)
+            }
+        }
     }
 
     private fun prewarmDatabase() {

@@ -76,6 +76,8 @@ fun WhitelistScreen(
     viewModel: NullifyViewModel,
     themeMode: ThemeMode,
     onCycleTheme: () -> Unit,
+    isProtectionActive: Boolean? = null,
+    onRequestProtection: () -> Unit = {},
 ) {
     val whitelistState by viewModel.whitelist.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
@@ -149,6 +151,41 @@ fun WhitelistScreen(
                 .padding(horizontal = 16.dp)
         ) {
             Spacer(modifier = Modifier.height(8.dp))
+
+            // Protection status banner. null = platform without role concept (iOS).
+            if (isProtectionActive == false) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                    ),
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Protección inactiva",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Nullify no puede bloquear llamadas hasta que lo elijas como app de" +
+                                " identificación y bloqueo de llamadas del sistema.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = onRequestProtection,
+                            modifier = Modifier.align(Alignment.End),
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Text("Activar protección")
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -354,6 +391,7 @@ private fun SwipeableContactCard(
                     Text(
                         text = contact.displayName,
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
                     )
                     Spacer(modifier = Modifier.height(2.dp))
                     Text(
@@ -379,27 +417,20 @@ private fun GlassCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    val isDark = LocalThemeIsDark.current
     val shape = RoundedCornerShape(16.dp)
-    val glassBorder = if (isDark) GlassBorderDark else GlassBorderLight
-    val glassAlpha = if (isDark) 0.70f else 0.82f
 
     Card(
         modifier = modifier,
         shape = shape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = glassAlpha),
+            // Opaque tonal container so contentColorFor() resolves to onSurface
+            // in every scheme (transparent surfaces broke it -> black text).
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             content()
-            Box(
-                modifier = Modifier
-                    .matchParentSize()
-                    .clip(shape)
-                    .border(0.5.dp, glassBorder, shape)
-            )
         }
     }
 }

@@ -9,6 +9,8 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.nullify.NullifyApp
 import com.nullify.data.AllowedContact
+import com.nullify.utils.ContactSource
+import com.nullify.utils.ContactSyncPlanner
 import com.nullify.utils.EcuadorPhoneUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -28,7 +30,7 @@ class ContactSyncWorker(
         }
 
         val app = applicationContext as NullifyApp
-        val contactsList = mutableListOf<AllowedContact>()
+        val freshSystemContacts = mutableListOf<AllowedContact>()
 
         val uri = ContactsContract.CommonDataKinds.Phone.CONTENT_URI
         val projection = arrayOf(
@@ -47,17 +49,37 @@ class ContactSyncWorker(
 
                     val normalized = EcuadorPhoneUtils.normalizeForDatabase(rawNumber)
                     if (normalized.isNotEmpty()) {
-                        contactsList.add(AllowedContact(normalized, name))
+                        freshSystemContacts.add(
+                            AllowedContact(
+                                normalizedNumber = normalized,
+                                displayName = name,
+                                source = ContactSource.SYSTEM,
+                            )
+                        )
                     }
                 }
             }
 
-            if (contactsList.isNotEmpty()) {
-                app.contactRepository.insertAll(contactsList)
+            if (freshSystemContacts.isNotEmpty()) {
+                // Delete stale SYSTEM entries (removed from phone contacts) while
+                // preserving MANUAL and SEED entries untouched.
+                val existing = app.contactRepository.getAllOnce()
+                val plan = ContactSyncPlanner.planSync(
+                    existing = existing,
+                    freshSystemNumbers = freshSystemContacts.map { it.normalizedNumber }.toSet(),
+                )
+                if (plan.staleSystemNumbers.isNotEmpty()) {
+                    app.contactRepository.deleteByNumbers(plan.staleSystemNumbers)
+                }
+                app.contactRepository.insertAll(freshSystemContacts)
+                // Keep the screening hot-path cache in sync immediately.
+                app.allowedNumberCache.replaceAll(
+                    app.contactRepository.getAllOnce().map { it.normalizedNumber }
+                )
             }
             Result.success()
         } catch (e: Exception) {
-            Result.failure()
+            Result.retry()
         }
     }
 }

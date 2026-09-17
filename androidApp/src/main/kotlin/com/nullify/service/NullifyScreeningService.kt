@@ -11,6 +11,7 @@ import com.nullify.NullifyApp
 import com.nullify.data.CallLogEntry
 import com.nullify.utils.CallScreeningEvaluator
 import com.nullify.utils.EcuadorPhoneUtils
+import com.nullify.utils.defaultBlockSpec
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -67,18 +68,11 @@ class NullifyScreeningService : CallScreeningService() {
         }
 
         val normalizedIncoming = EcuadorPhoneUtils.normalizeForDatabase(rawNumber)
-        val isAllowed = try {
-            runBlocking(Dispatchers.IO) {
-                val app = applicationContext as NullifyApp
-                app.contactRepository.isNumberAllowed(normalizedIncoming)
-            }
-        } catch (e: Exception) {
-            Log.e("NullifyScreening", "Error querying database for call screening", e)
-            false
-        }
+        val isAllowed = isNumberAllowed(normalizedIncoming)
+        val verdict = CallScreeningEvaluator.resolveDatabaseResult(isAllowed)
 
         val elapsed = System.currentTimeMillis() - startTime
-        if (isAllowed) {
+        if (verdict == CallScreeningEvaluator.ScreeningResult.ALLOW) {
             Log.i("NullifyScreening", "Decision in ${elapsed}ms — allowed (contact/whitelist)")
             respondToCall(callDetails, CallResponse.Builder().build())
             logCall(rawNumber, "ALLOWED", "in whitelist")
@@ -89,15 +83,37 @@ class NullifyScreeningService : CallScreeningService() {
         }
     }
 
+    /**
+     * Synchronous hot path: in-memory cache first (no I/O, no 5s-timeout
+     * risk). Falls back to Room only while the cache is still cold, and
+     * fail-closes (blocks) on DB errors — this is a firewall.
+     */
+    private fun isNumberAllowed(normalizedNumber: String): Boolean {
+        val app = applicationContext as NullifyApp
+        if (!app.allowedNumberCache.isEmpty()) {
+            return app.allowedNumberCache.isAllowed(normalizedNumber)
+        }
+        return try {
+            runBlocking(Dispatchers.IO) {
+                app.contactRepository.isNumberAllowed(normalizedNumber)
+            }
+        } catch (e: Exception) {
+            Log.e("NullifyScreening", "Error querying database for call screening", e)
+            false
+        }
+    }
+
     private fun blockCall(callDetails: Call.Details, reason: String) {
+        // NOTE: setSilenceCall(true) must NOT accompany disallow=true
+        // (docs: silence "only makes sense when the call has not been disallowed").
+        val spec = defaultBlockSpec()
         respondToCall(
             callDetails,
             CallResponse.Builder()
-                .setDisallowCall(true)
-                .setRejectCall(true)
-                .setSilenceCall(true)
-                .setSkipCallLog(false)
-                .setSkipNotification(false)
+                .setDisallowCall(spec.disallowCall)
+                .setRejectCall(spec.rejectCall)
+                .setSkipCallLog(spec.skipCallLog)
+                .setSkipNotification(spec.skipNotification)
                 .build()
         )
     }

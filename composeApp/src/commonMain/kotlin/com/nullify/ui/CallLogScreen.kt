@@ -169,7 +169,7 @@ fun CallLogScreen(
 @Composable
 private fun CallLogCard(entry: CallLogEntry) {
     val isBlocked = entry.result == "BLOCKED"
-    val resultColor = if (isBlocked) MaterialTheme.colorScheme.error else Color(0xFF2E7D32)
+    val resultColor = if (isBlocked) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.tertiary
     val resultIcon = if (isBlocked) Icons.Default.Block else Icons.Default.CheckCircle
     val resultLabel = if (isBlocked) "BLOQUEADA" else "PERMITIDA"
 
@@ -177,9 +177,9 @@ private fun CallLogCard(entry: CallLogEntry) {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.70f),
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
     ) {
         Row(
             modifier = Modifier
@@ -198,6 +198,7 @@ private fun CallLogCard(entry: CallLogEntry) {
                 Text(
                     text = if (entry.phoneNumber.isNotEmpty()) entry.phoneNumber else "Número privado",
                     style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Row {
                     Text(

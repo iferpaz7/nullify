@@ -16,6 +16,12 @@ interface ContactDao {
     @Query("SELECT * FROM allowed_contacts ORDER BY displayName ASC")
     fun getAllAllowedContactsFlow(): Flow<List<AllowedContact>>
 
+    @Query("SELECT * FROM allowed_contacts")
+    suspend fun getAllOnce(): List<AllowedContact>
+
+    @Query("DELETE FROM allowed_contacts WHERE normalizedNumber IN (:numbers)")
+    suspend fun deleteByNumbers(numbers: List<String>)
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(contact: AllowedContact)
 

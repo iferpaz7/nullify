@@ -5,6 +5,7 @@ import com.nullify.data.CallLogEntry
 import com.nullify.data.repository.CallLogRepository
 import com.nullify.data.repository.ContactRepository
 import com.nullify.ui.state.UiState
+import com.nullify.utils.AllowedNumberCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -38,6 +39,7 @@ class NullifyViewModelTest {
         viewModel = NullifyViewModel(
             contactRepository = contactRepository,
             callLogRepository = callLogRepository,
+            allowedNumberCache = AllowedNumberCache(),
             ioDispatcher = testDispatcher,
         )
     }
@@ -138,6 +140,8 @@ private class FakeContactRepository : ContactRepository {
 
     override fun getAllAllowedContactsFlow(): Flow<List<AllowedContact>> = contactsFlow
 
+    override suspend fun getAllOnce(): List<AllowedContact> = contactsFlow.value
+
     override suspend fun insert(contact: AllowedContact) {
         contactsFlow.value = contactsFlow.value.filter { it.normalizedNumber != contact.normalizedNumber } + contact
     }
@@ -148,6 +152,10 @@ private class FakeContactRepository : ContactRepository {
 
     override suspend fun delete(contact: AllowedContact) {
         contactsFlow.value = contactsFlow.value.filter { it.normalizedNumber != contact.normalizedNumber }
+    }
+
+    override suspend fun deleteByNumbers(numbers: List<String>) {
+        contactsFlow.value = contactsFlow.value.filter { it.normalizedNumber !in numbers }
     }
 
     override suspend fun clearAll() {

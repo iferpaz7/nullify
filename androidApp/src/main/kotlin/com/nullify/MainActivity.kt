@@ -1,8 +1,7 @@
 package com.nullify
 
 import android.Manifest
-import android.app.role.RoleManager
-import android.content.Context
+import android.app.Activity
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,6 +9,9 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -29,9 +31,19 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private var isProtectionActive by mutableStateOf(false)
+
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
             scheduleContactSync()
+        }
+
+    private val roleLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            // The role is granted only on RESULT_OK; refresh state either way so
+            // the UI banner reflects reality instead of assuming success.
+            isProtectionActive =
+                result.resultCode == Activity.RESULT_OK && CallScreeningRole.isHeld(this)
         }
 
     private val viewModel: NullifyViewModel by viewModel()
@@ -40,12 +52,29 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
 
-        requestCallScreeningRole()
+        requestCallScreeningRoleIfNeeded()
         requestPermissionsIfNeeded()
 
         setContent {
-            NullifyApp(viewModel = viewModel)
+            NullifyApp(
+                viewModel = viewModel,
+                isProtectionActive = isProtectionActive,
+                onRequestProtection = ::requestCallScreeningRoleIfNeeded,
+            )
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        // The user can grant/revoke the role in Settings at any time.
+        isProtectionActive = CallScreeningRole.isHeld(this)
+    }
+
+    fun requestCallScreeningRoleIfNeeded() {
+        isProtectionActive = CallScreeningRole.isHeld(this)
+        if (isProtectionActive) return
+        val intent = CallScreeningRole.createRequestIntent(this) ?: return
+        roleLauncher.launch(intent)
     }
 
     private fun requestPermissionsIfNeeded() {
@@ -56,18 +85,6 @@ class MainActivity : ComponentActivity() {
             permissionLauncher.launch(missing.toTypedArray())
         } else {
             scheduleContactSync()
-        }
-    }
-
-    private fun requestCallScreeningRole() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            val roleManager = getSystemService(ROLE_SERVICE) as RoleManager
-            if (roleManager.isRoleAvailable(RoleManager.ROLE_CALL_SCREENING)) {
-                if (!roleManager.isRoleHeld(RoleManager.ROLE_CALL_SCREENING)) {
-                    val intent = roleManager.createRequestRoleIntent(RoleManager.ROLE_CALL_SCREENING)
-                    startActivity(intent)
-                }
-            }
         }
     }
 
