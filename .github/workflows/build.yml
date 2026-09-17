@@ -10,14 +10,41 @@ on:
     paths-ignore: ['docs/**']
   workflow_dispatch:
 
+# Least privilege by default; the release job elevates to contents:write.
 permissions:
-  contents: write
-  id-token: write
+  contents: read
+
+# Cancel superseded runs on the same ref (saves minutes on force-pushes).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Run unit tests
+        run: ./gradlew :androidApp:testDebugUnitTest
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      version-name: ${{ steps.version.outputs.name }}
+      version-code: ${{ steps.version.outputs.code }}
     steps:
       - uses: actions/checkout@v7
         with:
@@ -47,6 +74,8 @@ jobs:
           echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
           echo "code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
 
+      # Release keystore only exists for tag builds; otherwise the
+      # Gradle build falls back to debug signing (see androidApp/build.gradle.kts).
       - name: Decode keystore
         if: github.ref_type == 'tag'
         run: |
@@ -71,25 +100,41 @@ jobs:
           name: nullify-${{ steps.version.outputs.name }}
           path: androidApp/build/outputs/apk/release/*.apk
 
+  # Single source of GitHub Releases: tags only. Pushes to main and PRs
+  # verify (test + build) and keep the APK as a run artifact instead.
+  release:
+    if: github.ref_type == 'tag'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Download APK
+        uses: actions/download-artifact@v7
+        with:
+          name: nullify-${{ needs.build.outputs.version-name }}
+          path: release-apk
+
       - name: Generate release notes
-        id: release_notes
         run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
-            PREV_TAG=$(git tag --sort=-creatordate | head -2 | tail -1)
-            if [[ -n "$PREV_TAG" && "$PREV_TAG" != "$GITHUB_REF_NAME" ]]; then
-              git log --oneline "$PREV_TAG..HEAD" > release_notes.md
-            fi
+          PREV_TAG=$(git tag --sort=-creatordate | head -2 | tail -1)
+          if [[ -n "$PREV_TAG" && "$PREV_TAG" != "$GITHUB_REF_NAME" ]]; then
+            git log --oneline "$PREV_TAG..HEAD" > release_notes.md
           fi
           if [[ ! -f release_notes.md || ! -s release_notes.md ]]; then
             git log --oneline HEAD~10..HEAD > release_notes.md
           fi
 
       - name: Create GitHub Release
-        if: github.event_name != 'pull_request'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: v${{ steps.version.outputs.name }}
-          files: androidApp/build/outputs/apk/release/*.apk
+          tag_name: ${{ github.ref_name }}
+          files: release-apk/*.apk
           body_path: release_notes.md
           generate_release_notes: true
           fail_on_unmatched_files: false
@@ -97,6 +142,7 @@ jobs:
 
   lint:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - name: Set up JDK 21
