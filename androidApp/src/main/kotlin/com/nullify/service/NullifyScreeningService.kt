@@ -34,18 +34,27 @@ class NullifyScreeningService : CallScreeningService() {
             false
         }
 
+        val screeningEnabled = isScreeningEnabled()
         val fastPathResult = CallScreeningEvaluator.evaluateFastPath(
             rawNumber = rawNumber,
             isIncoming = isIncoming,
             presentationAllowed = presentationAllowed,
             verificationFailed = verificationFailed,
+            screeningEnabled = screeningEnabled,
         )
 
         when (fastPathResult) {
             CallScreeningEvaluator.ScreeningResult.ALLOW -> {
                 respondToCall(callDetails, CallResponse.Builder().build())
-                if (EcuadorPhoneUtils.isEmergencyNumber(rawNumber)) {
-                    logCall(rawNumber, "ALLOWED", "emergency number")
+                when {
+                    isIncoming && !screeningEnabled ->
+                        logCall(
+                            if (rawNumber.isBlank()) "DESCONOCIDO" else rawNumber,
+                            "ALLOWED",
+                            "protección desactivada",
+                        )
+                    isIncoming && EcuadorPhoneUtils.isEmergencyNumber(rawNumber) ->
+                        logCall(rawNumber, "ALLOWED", "emergency number")
                 }
                 return
             }
@@ -100,6 +109,27 @@ class NullifyScreeningService : CallScreeningService() {
         } catch (e: Exception) {
             Log.e("NullifyScreening", "Error querying database for call screening", e)
             false
+        }
+    }
+
+    /**
+     * Synchronous hot path for the master switch: in-memory cache first,
+     * Room only while the cache is cold. Fail-closed (screening stays ON)
+     * on DB errors.
+     */
+    private fun isScreeningEnabled(): Boolean {
+        val app = applicationContext as NullifyApp
+        val cache = app.screeningPolicyCache
+        if (cache.isWarm()) {
+            return cache.isScreeningEnabled()
+        }
+        return try {
+            runBlocking(Dispatchers.IO) {
+                app.settingsRepository.isScreeningEnabled()
+            }
+        } catch (e: Exception) {
+            Log.e("NullifyScreening", "Error reading screening policy", e)
+            true
         }
     }
 

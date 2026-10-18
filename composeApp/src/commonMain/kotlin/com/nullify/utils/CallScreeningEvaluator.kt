@@ -23,8 +23,10 @@ object CallScreeningEvaluator {
         isIncoming: Boolean,
         presentationAllowed: Boolean,
         verificationFailed: Boolean = false,
+        screeningEnabled: Boolean = true,
     ): ScreeningResult {
         if (!isIncoming) return ScreeningResult.ALLOW
+        if (!screeningEnabled) return ScreeningResult.ALLOW
         if (verificationFailed) return ScreeningResult.BLOCK
         if (!presentationAllowed) return ScreeningResult.BLOCK
         if (rawNumber.isBlank() || isUnknownNumberString(rawNumber)) return ScreeningResult.BLOCK

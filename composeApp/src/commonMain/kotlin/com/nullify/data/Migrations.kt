@@ -17,3 +17,20 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         )
     }
 }
+
+/**
+ * v3 -> v4: adds the [ScreeningSettings] singleton table holding the
+ * screening master switch. Seeded with screening enabled so existing users
+ * keep blocking unknown callers by default.
+ */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `screening_settings` " +
+                "(`id` INTEGER NOT NULL, `screeningEnabled` INTEGER NOT NULL, PRIMARY KEY(`id`))"
+        )
+        db.execSQL(
+            "INSERT OR REPLACE INTO screening_settings (id, screeningEnabled) VALUES (0, 1)"
+        )
+    }
+}

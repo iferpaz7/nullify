@@ -79,4 +79,49 @@ class CallScreeningEvaluatorTest {
         )
         assertEquals(CallScreeningEvaluator.ScreeningResult.CHECK_DATABASE, result)
     }
+
+    @Test
+    fun testEvaluateFastPath_ScreeningDisabled_AllowsUnknownNumber() {
+        val result = CallScreeningEvaluator.evaluateFastPath(
+            rawNumber = "0991234567",
+            isIncoming = true,
+            presentationAllowed = true,
+            screeningEnabled = false,
+        )
+        assertEquals(CallScreeningEvaluator.ScreeningResult.ALLOW, result)
+    }
+
+    @Test
+    fun testEvaluateFastPath_ScreeningDisabled_AllowsUnknownString() {
+        val result = CallScreeningEvaluator.evaluateFastPath(
+            rawNumber = "PRIVATE",
+            isIncoming = true,
+            presentationAllowed = true,
+            screeningEnabled = false,
+        )
+        assertEquals(CallScreeningEvaluator.ScreeningResult.ALLOW, result)
+    }
+
+    @Test
+    fun testEvaluateFastPath_ScreeningDisabled_AllowsRestrictedPresentation() {
+        val result = CallScreeningEvaluator.evaluateFastPath(
+            rawNumber = "0991234567",
+            isIncoming = true,
+            presentationAllowed = false,
+            screeningEnabled = false,
+        )
+        assertEquals(CallScreeningEvaluator.ScreeningResult.ALLOW, result)
+    }
+
+    @Test
+    fun testEvaluateFastPath_ScreeningDisabled_AllowsVerificationFailed() {
+        val result = CallScreeningEvaluator.evaluateFastPath(
+            rawNumber = "0991234567",
+            isIncoming = true,
+            presentationAllowed = true,
+            verificationFailed = true,
+            screeningEnabled = false,
+        )
+        assertEquals(CallScreeningEvaluator.ScreeningResult.ALLOW, result)
+    }
 }

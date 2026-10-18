@@ -12,11 +12,19 @@ Incoming call
       ▼
 NullifyScreeningService
       │
+      ├── Master switch OFF? ──> Allow (log "protección desactivada")
       ├── Private/hidden/no number? ──> Block
       ├── Emergency? ──> Allow
       ├── In allowlist (contacts + system)? ──> Allow
       └── Unknown number ──> Block
 ```
+
+The **master switch** (`screening_settings` table, single row `id = 0`) is read
+before any other rule: when disabled, every call is allowed. It is mirrored
+into the in-memory `ScreeningPolicyCache` (like the allowlist into
+`AllowedNumberCache`) so the screening service reads it without touching Room
+on the hot path, falling back to the database only while the cache is cold and
+failing closed (screening stays ON) on errors.
 
 ## Allowlist population
 
@@ -47,8 +55,10 @@ Nullify uses a **3-layer architecture** with unidirectional data flow (UDF):
 ├──────────────────────────────────────────────────┤
 │  Data Layer (Repository + DAO + Room)            │
 │  ContactRepository · CallLogRepository           │
-│  ContactDao · CallLogDao · NullifyDatabase       │
-│  AllowedContact · CallLogEntry (entities)        │
+│  SettingsRepository                              │
+│  ContactDao · CallLogDao · SettingsDao ·         │
+│  NullifyDatabase                                 │
+│  AllowedContact · CallLogEntry · ScreeningSettings (entities) │
 ├──────────────────────────────────────────────────┤
 │  Platform Layer (Android-specific)               │
 │  NullifyApp · MainActivity · ScreeningService    │
@@ -70,6 +80,9 @@ All singletons are created at the Application level in `NullifyApp`:
 | `NullifyDatabase`        | `DatabaseFactory`             |
 | `ContactRepository`      | `ContactRepositoryImpl(dao)`  |
 | `CallLogRepository`      | `CallLogRepositoryImpl(dao)`  |
+| `SettingsRepository`     | `SettingsRepositoryImpl(dao)` |
+| `AllowedNumberCache`     | `AllowedNumberCache()`        |
+| `ScreeningPolicyCache`   | `ScreeningPolicyCache()`      |
 | `NullifyViewModel`       | `NullifyViewModelFactory` via `by viewModels` |
 
 The `NullifyViewModel` receives `CoroutineDispatcher` (default `Dispatchers.IO`)

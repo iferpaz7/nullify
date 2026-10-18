@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -41,6 +42,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -81,6 +83,7 @@ fun WhitelistScreen(
 ) {
     val whitelistState by viewModel.whitelist.collectAsStateWithLifecycle()
     val searchQuery by viewModel.searchQuery.collectAsStateWithLifecycle()
+    val screeningEnabled by viewModel.screeningEnabled.collectAsStateWithLifecycle()
 
     var nameInput by rememberSaveable { mutableStateOf("") }
     var numberInput by rememberSaveable { mutableStateOf("") }
@@ -186,6 +189,13 @@ fun WhitelistScreen(
                 }
                 Spacer(modifier = Modifier.height(16.dp))
             }
+
+            MasterSwitchCard(
+                screeningEnabled = screeningEnabled,
+                onToggle = { viewModel.setScreeningEnabled(it) },
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             GlassCard(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -361,6 +371,67 @@ fun WhitelistScreen(
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MasterSwitchCard(
+    screeningEnabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+) {
+    GlassCard(modifier = Modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Bloquear llamadas desconocidas",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = if (screeningEnabled) {
+                            "Solo pueden llamar los números de tus contactos y de la lista blanca."
+                        } else {
+                            "Bloqueo desactivado: cualquier llamada puede entrar."
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Switch(
+                    checked = screeningEnabled,
+                    onCheckedChange = onToggle,
+                )
+            }
+            AnimatedVisibility(
+                visible = !screeningEnabled,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                Row(
+                    modifier = Modifier.padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Recibirás incluso llamadas privadas y de números no verificados.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
                 }
             }
         }

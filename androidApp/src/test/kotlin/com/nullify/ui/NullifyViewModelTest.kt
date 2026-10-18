@@ -2,10 +2,13 @@ package com.nullify.ui
 
 import com.nullify.data.AllowedContact
 import com.nullify.data.CallLogEntry
+import com.nullify.data.ScreeningSettings
 import com.nullify.data.repository.CallLogRepository
 import com.nullify.data.repository.ContactRepository
+import com.nullify.data.repository.SettingsRepository
 import com.nullify.ui.state.UiState
 import com.nullify.utils.AllowedNumberCache
+import com.nullify.utils.ScreeningPolicyCache
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -19,6 +22,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -29,6 +33,7 @@ class NullifyViewModelTest {
     private val testDispatcher = StandardTestDispatcher()
     private lateinit var contactRepository: FakeContactRepository
     private lateinit var callLogRepository: FakeCallLogRepository
+    private lateinit var settingsRepository: FakeSettingsRepository
     private lateinit var viewModel: NullifyViewModel
 
     @Before
@@ -36,10 +41,13 @@ class NullifyViewModelTest {
         Dispatchers.setMain(testDispatcher)
         contactRepository = FakeContactRepository()
         callLogRepository = FakeCallLogRepository()
+        settingsRepository = FakeSettingsRepository()
         viewModel = NullifyViewModel(
             contactRepository = contactRepository,
             callLogRepository = callLogRepository,
+            settingsRepository = settingsRepository,
             allowedNumberCache = AllowedNumberCache(),
+            screeningPolicyCache = ScreeningPolicyCache(),
             ioDispatcher = testDispatcher,
         )
     }
@@ -129,6 +137,29 @@ class NullifyViewModelTest {
         val list = (state as UiState.Success).data
         assertTrue(list.isEmpty())
     }
+
+    @Test
+    fun testScreeningEnabled_defaultsToTrue() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.screeningEnabled.collect {}
+        }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.screeningEnabled.value)
+    }
+
+    @Test
+    fun testSetScreeningEnabled_persistsDisabledState() = runTest {
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.screeningEnabled.collect {}
+        }
+
+        viewModel.setScreeningEnabled(false)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.screeningEnabled.value)
+        assertFalse(settingsRepository.isScreeningEnabled())
+    }
 }
 
 private class FakeContactRepository : ContactRepository {
@@ -174,5 +205,17 @@ private class FakeCallLogRepository : CallLogRepository {
 
     override suspend fun clearAll() {
         callLogFlow.value = emptyList()
+    }
+}
+
+private class FakeSettingsRepository : SettingsRepository {
+    private val settingsFlow = MutableStateFlow(ScreeningSettings(screeningEnabled = true))
+
+    override fun getSettingsFlow(): Flow<ScreeningSettings> = settingsFlow
+
+    override suspend fun isScreeningEnabled(): Boolean = settingsFlow.value.screeningEnabled
+
+    override suspend fun setScreeningEnabled(enabled: Boolean) {
+        settingsFlow.value = ScreeningSettings(screeningEnabled = enabled)
     }
 }

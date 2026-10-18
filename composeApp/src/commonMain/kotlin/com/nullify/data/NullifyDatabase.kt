@@ -7,14 +7,15 @@ import com.nullify.utils.ContactSource
 import com.nullify.utils.EcuadorPhoneUtils
 
 @Database(
-    entities = [AllowedContact::class, CallLogEntry::class],
-    version = 3,
+    entities = [AllowedContact::class, CallLogEntry::class, ScreeningSettings::class],
+    version = 4,
     exportSchema = false,
 )
 abstract class NullifyDatabase : RoomDatabase() {
 
     abstract fun contactDao(): ContactDao
     abstract fun callLogDao(): CallLogDao
+    abstract fun settingsDao(): SettingsDao
 
     class DatabasePrepopulateCallback : RoomDatabase.Callback() {
         override fun onCreate(db: SupportSQLiteDatabase) {
@@ -25,6 +26,9 @@ abstract class NullifyDatabase : RoomDatabase() {
                     arrayOf(number, label, ContactSource.SEED)
                 )
             }
+            db.execSQL(
+                "INSERT OR REPLACE INTO screening_settings (id, screeningEnabled) VALUES (0, 1)"
+            )
         }
 
         private fun getEcuadorSystemWhitelist(): List<Pair<String, String>> {

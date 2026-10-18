@@ -6,10 +6,12 @@ import com.nullify.data.AllowedContact
 import com.nullify.data.CallLogEntry
 import com.nullify.data.repository.CallLogRepository
 import com.nullify.data.repository.ContactRepository
+import com.nullify.data.repository.SettingsRepository
 import com.nullify.ui.state.UiState
 import com.nullify.utils.AllowedNumberCache
 import com.nullify.utils.ContactSource
 import com.nullify.utils.EcuadorPhoneUtils
+import com.nullify.utils.ScreeningPolicyCache
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,7 +27,9 @@ import kotlinx.coroutines.launch
 class NullifyViewModel(
     private val contactRepository: ContactRepository,
     private val callLogRepository: CallLogRepository,
+    private val settingsRepository: SettingsRepository,
     private val allowedNumberCache: AllowedNumberCache,
+    private val screeningPolicyCache: ScreeningPolicyCache,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
 
@@ -64,8 +68,25 @@ class NullifyViewModel(
             initialValue = UiState.Loading
         )
 
+    val screeningEnabled: StateFlow<Boolean> = settingsRepository
+        .getSettingsFlow()
+        .map { it.screeningEnabled }
+        .catch { emit(true) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
+        )
+
     fun setSearchQuery(query: String) {
         _searchQuery.value = query
+    }
+
+    fun setScreeningEnabled(enabled: Boolean) {
+        viewModelScope.launch(ioDispatcher) {
+            settingsRepository.setScreeningEnabled(enabled)
+            screeningPolicyCache.update(enabled)
+        }
     }
 
     fun addManualContact(name: String, number: String) {

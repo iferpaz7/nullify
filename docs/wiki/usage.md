@@ -9,6 +9,19 @@ following ring through:
 2. Ecuadorian bank/utility numbers (pre-populated)
 3. Emergency numbers (911, 101, 131, etc.)
 
+## Master switch (allow all calls)
+
+At the top of the **Lista Blanca** tab there is a **"Bloquear llamadas
+desconocidas"** switch. Turn it **off** to disable screening entirely: every
+incoming call rings, including private/hidden callers and numbers that fail
+caller-ID verification.
+
+When the switch is off a warning is shown, and each allowed call is recorded
+in the **Historial** with the reason *"protección desactivada"*. Turn the
+switch back **on** to restore the allowlist behavior.
+
+The choice is persisted, so it survives app and device restarts.
+
 ## Permissions
 
 On first launch the app requests:

@@ -6,8 +6,10 @@ import androidx.work.Configuration
 import com.nullify.data.NullifyDatabase
 import com.nullify.data.repository.CallLogRepository
 import com.nullify.data.repository.ContactRepository
+import com.nullify.data.repository.SettingsRepository
 import com.nullify.di.appModule
 import com.nullify.utils.AllowedNumberCache
+import com.nullify.utils.ScreeningPolicyCache
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -35,6 +37,12 @@ class NullifyApp : Application(), Configuration.Provider {
     val allowedNumberCache: AllowedNumberCache
         get() = get()
 
+    val screeningPolicyCache: ScreeningPolicyCache
+        get() = get()
+
+    val settingsRepository: SettingsRepository
+        get() = get()
+
     override fun onCreate() {
         super.onCreate()
         database = createNullifyDatabase(this)
@@ -47,6 +55,7 @@ class NullifyApp : Application(), Configuration.Provider {
                     single { database }
                     single { database.contactDao() }
                     single { database.callLogDao() }
+                    single { database.settingsDao() }
                 },
                 appModule
             )
@@ -54,6 +63,7 @@ class NullifyApp : Application(), Configuration.Provider {
 
         prewarmDatabase()
         mirrorWhitelistToCache()
+        mirrorScreeningPolicyToCache()
     }
 
     /**
@@ -71,6 +81,26 @@ class NullifyApp : Application(), Configuration.Provider {
                     }
             } catch (e: Exception) {
                 Log.e("NullifyApp", "Failed to mirror whitelist to cache", e)
+            }
+        }
+    }
+
+    /**
+     * Keeps the screening master switch mirrored into memory so the service
+     * never has to touch Room on the hot path after the first emission.
+     */
+    private fun mirrorScreeningPolicyToCache() {
+        appScope.launch {
+            try {
+                val cache: ScreeningPolicyCache = get()
+                val repository: SettingsRepository = get()
+                repository.getSettingsFlow()
+                    .catch { Log.e("NullifyApp", "Screening policy flow failed", it) }
+                    .collect { settings ->
+                        cache.update(settings.screeningEnabled)
+                    }
+            } catch (e: Exception) {
+                Log.e("NullifyApp", "Failed to mirror screening policy to cache", e)
             }
         }
     }
